@@ -260,6 +260,62 @@ const FOOD_DATABASE = {
     sources: ['WHO 2023: Legumes acceptable', 'Combine with vitamin C for iron absorption'],
     allergens: [],
     servingSize: { '6-7mo': '1-2 tbsp', '8-9mo': '2-3 tbsp', '10-12mo': '3-4 tbsp' }
+  },
+  butternutSquash: {
+    name: 'Butternut squash',
+    benefits: ['Vitamin A', 'Beta-carotene', 'Fiber', 'Naturally sweet flavor'],
+    sources: ['WHO 2023: Variety of vegetables', 'Universal first food across cultures'],
+    allergens: [],
+    servingSize: { '6-7mo': '1-2 tbsp', '8-9mo': '2-4 tbsp', '10-12mo': '4-6 tbsp' }
+  },
+  peas: {
+    name: 'Peas',
+    benefits: ['Plant protein', 'Vitamin C enhances iron absorption', 'Fiber', 'Vitamin K'],
+    sources: ['WHO 2023: Variety of vegetables', 'Scandinavian vegetable variety'],
+    allergens: [],
+    servingSize: { '6-7mo': '1-2 tbsp', '8-9mo': '2-3 tbsp', '10-12mo': '3-4 tbsp' }
+  },
+  kale: {
+    name: 'Kale',
+    benefits: ['Calcium source for dairy-free', 'Vitamin K', 'Vitamin C', 'Antioxidants'],
+    sources: ['Scandinavian vegetable emphasis', 'Calcium alternative to dairy'],
+    allergens: [],
+    servingSize: { '6-7mo': '1-2 tbsp', '8-9mo': '2-3 tbsp', '10-12mo': '3-4 tbsp' }
+  },
+  turkey: {
+    name: 'Turkey',
+    benefits: ['Lean protein', 'Iron source', 'B vitamins', 'Zinc'],
+    sources: ['WHO 2023: Animal foods daily', 'Variety of protein sources recommended'],
+    allergens: [],
+    servingSize: { '6-7mo': '1-2 tbsp', '8-9mo': '2-3 tbsp', '10-12mo': '1-2 oz' }
+  },
+  chickenLiver: {
+    name: 'Chicken liver pate',
+    benefits: ['Most concentrated bioavailable iron', 'Vitamin A', 'B12', 'Folate'],
+    sources: ['WHO 2023: Organ meats nutrient-dense', 'Highest iron bioavailability of any food'],
+    allergens: [],
+    servingSize: { '6-7mo': '1 tsp', '8-9mo': '1-2 tsp', '10-12mo': '1-2 tbsp' }
+  },
+  cashewButter: {
+    name: 'Cashew butter (thinned)',
+    benefits: ['Tree nut allergen exposure', 'Healthy fats', 'Magnesium', 'Iron'],
+    sources: ['Extended LEAP principles to all allergens', 'Tree nut variety for sustained exposure'],
+    allergens: ['tree nuts'],
+    servingSize: { '6-7mo': '1/4-1/2 tsp', '8-9mo': '1/2-1 tsp', '10-12mo': '1-2 tsp' }
+  },
+  mushrooms: {
+    name: 'Mushrooms (cooked)',
+    benefits: ['Vitamin D', 'B vitamins', 'Selenium', 'Umami flavor development'],
+    sources: ['WHO 2023: Variety of vegetables', 'Vitamin D source for dairy-free'],
+    allergens: [],
+    servingSize: { '6-7mo': '1-2 tbsp', '8-9mo': '2-3 tbsp', '10-12mo': '3-4 tbsp' }
+  },
+  quinoa: {
+    name: 'Quinoa',
+    benefits: ['Complete plant protein', 'Iron', 'Fiber', 'Gluten-free grain alternative'],
+    sources: ['WHO 2023: Grains supplementary not foundational', 'Complete amino acid profile'],
+    allergens: [],
+    servingSize: { '6-7mo': '1-2 tbsp', '8-9mo': '2-4 tbsp', '10-12mo': '4-6 tbsp' }
   }
 };
 
@@ -389,24 +445,57 @@ const MEAL_PLANS = {
       {
         day: 1,
         meals: [
-          {
-            time: 'Breakfast',
-            options: [
-              { foods: ['egg', 'avocado', 'peanutButter'], description: 'Scrambled egg with avocado and peanut butter' }
-            ]
-          },
-          {
-            time: 'Lunch',
-            options: [
-              { foods: ['beef', 'sweetPotato', 'spinach', 'oliveOil'], description: 'Ground beef with sweet potato, spinach, olive oil' }
-            ]
-          },
-          {
-            time: 'Dinner',
-            options: [
-              { foods: ['chicken', 'broccoli', 'tahini'], description: 'Chicken with broccoli and tahini' }
-            ]
-          }
+          { time: 'Breakfast', options: [{ foods: ['egg', 'avocado', 'peanutButter'], description: 'Scrambled egg with avocado and peanut butter' }] },
+          { time: 'Lunch', options: [{ foods: ['beef', 'sweetPotato', 'spinach', 'oliveOil'], description: 'Ground beef with sweet potato, spinach, olive oil' }] },
+          { time: 'Dinner', options: [{ foods: ['chicken', 'broccoli', 'tahini'], description: 'Chicken with broccoli and tahini' }] }
+        ]
+      },
+      {
+        day: 2,
+        meals: [
+          { time: 'Breakfast', options: [{ foods: ['beef', 'avocado'], description: 'Pureed beef mixed into mashed avocado' }] },
+          { time: 'Lunch', options: [{ foods: ['salmon', 'carrots', 'oliveOil'], description: 'Salmon with carrots and olive oil' }] },
+          { time: 'Dinner', options: [{ foods: ['egg', 'spinach', 'almondButter'], description: 'Scrambled egg with spinach and almond butter' }] }
+        ]
+      },
+      {
+        day: 3,
+        meals: [
+          { time: 'Breakfast', options: [{ foods: ['egg', 'avocado'], description: 'Mashed egg yolk with avocado' }] },
+          { time: 'Lunch', options: [{ foods: ['lamb', 'butternutSquash', 'tahini'], description: 'Lamb with butternut squash and tahini' }] },
+          { time: 'Dinner', options: [{ foods: ['whitefish', 'peas', 'oliveOil'], description: 'White fish with peas and olive oil' }] }
+        ]
+      },
+      {
+        day: 4,
+        meals: [
+          { time: 'Breakfast', options: [{ foods: ['chicken', 'sweetPotato', 'peanutButter'], description: 'Ground chicken with sweet potato and peanut butter' }] },
+          { time: 'Lunch', options: [{ foods: ['lentils', 'spinach', 'oliveOil'], description: 'Lentils (very soft) with spinach and olive oil' }] },
+          { time: 'Dinner', options: [{ foods: ['egg', 'carrots', 'tahini'], description: 'Scrambled egg with vegetables and tahini' }] }
+        ]
+      },
+      {
+        day: 5,
+        meals: [
+          { time: 'Breakfast', options: [{ foods: ['egg', 'avocado', 'tahini'], description: 'Egg with avocado and tahini' }] },
+          { time: 'Lunch', options: [{ foods: ['beef', 'broccoli', 'oliveOil'], description: 'Ground beef with broccoli and olive oil' }] },
+          { time: 'Dinner', options: [{ foods: ['mackerel', 'sweetPotato', 'peanutButter'], description: 'Mackerel with sweet potato and peanut butter' }] }
+        ]
+      },
+      {
+        day: 6,
+        meals: [
+          { time: 'Breakfast', options: [{ foods: ['egg', 'spinach', 'almondButter'], description: 'Scrambled egg with spinach and almond butter' }] },
+          { time: 'Lunch', options: [{ foods: ['lamb', 'carrots', 'hummus'], description: 'Lamb with carrots and hummus' }] },
+          { time: 'Dinner', options: [{ foods: ['sardines', 'sweetPotato', 'oliveOil'], description: 'Sardines (mashed) with sweet potato and olive oil' }] }
+        ]
+      },
+      {
+        day: 7,
+        meals: [
+          { time: 'Breakfast', options: [{ foods: ['egg', 'avocado', 'peanutButter'], description: 'Scrambled egg with avocado and peanut butter' }] },
+          { time: 'Lunch', options: [{ foods: ['chicken', 'butternutSquash', 'tahini'], description: 'Chicken with butternut squash and tahini' }] },
+          { time: 'Dinner', options: [{ foods: ['whitefish', 'broccoli', 'oliveOil'], description: 'White fish with broccoli and olive oil' }] }
         ]
       }
     ]
@@ -414,8 +503,198 @@ const MEAL_PLANS = {
   'month2': {
     name: 'Month 2: Age 7 Months',
     ageRange: '7 months',
-    goals: ['Three meals daily', 'Daily animal food', 'Maintain allergen exposure'],
-    days: []
+    goals: ['Three meals daily established', 'Daily animal-source food (WHO)', 'Maintain all allergen exposures 3x weekly', 'Increase texture complexity'],
+    days: [
+      {
+        day: 1,
+        meals: [
+          { time: 'Breakfast', options: [{ foods: ['egg', 'avocado', 'peanutButter'], description: 'Scrambled egg with avocado and peanut butter' }] },
+          { time: 'Lunch', options: [{ foods: ['beef', 'sweetPotato', 'kale', 'oliveOil'], description: 'Ground beef with sweet potato, kale, and olive oil' }] },
+          { time: 'Dinner', options: [{ foods: ['salmon', 'butternutSquash', 'tahini'], description: 'Salmon with butternut squash and tahini drizzle' }] }
+        ]
+      },
+      {
+        day: 2,
+        meals: [
+          { time: 'Breakfast', options: [{ foods: ['egg', 'avocado', 'almondButter'], description: 'Hard-boiled egg mashed with avocado and almond butter' }] },
+          { time: 'Lunch', options: [{ foods: ['chickenLiver', 'sweetPotato', 'oliveOil'], description: 'Chicken liver pate (1-2 tsp) with sweet potato and olive oil' }] },
+          { time: 'Dinner', options: [{ foods: ['lentils', 'spinach', 'carrots', 'tahini'], description: 'Lentils with spinach, carrots, and tahini' }] }
+        ]
+      },
+      {
+        day: 3,
+        meals: [
+          { time: 'Breakfast', options: [{ foods: ['egg', 'spinach', 'tahini'], description: 'Scrambled egg with spinach and tahini' }] },
+          { time: 'Lunch', options: [{ foods: ['mackerel', 'peas', 'oliveOil'], description: 'Mackerel (fatty fish) with peas and olive oil' }] },
+          { time: 'Dinner', options: [{ foods: ['lamb', 'carrots', 'peanutButter'], description: 'Ground lamb with vegetables and peanut butter mixed in' }] }
+        ]
+      },
+      {
+        day: 4,
+        meals: [
+          { time: 'Breakfast', options: [{ foods: ['egg', 'avocado'], description: 'Mashed egg yolk with avocado' }] },
+          { time: 'Lunch', options: [{ foods: ['beef', 'butternutSquash', 'almondButter'], description: 'Ground beef with butternut squash and almond butter' }] },
+          { time: 'Dinner', options: [{ foods: ['whitefish', 'broccoli', 'oliveOil'], description: 'White fish with broccoli and olive oil' }] }
+        ]
+      },
+      {
+        day: 5,
+        meals: [
+          { time: 'Breakfast', options: [{ foods: ['egg', 'carrots', 'peanutButter'], description: 'Scrambled egg with vegetables and peanut butter' }] },
+          { time: 'Lunch', options: [{ foods: ['salmon', 'sweetPotato', 'egg'], description: 'Salmon patty (salmon + potato + egg binder) with vegetables' }] },
+          { time: 'Dinner', options: [{ foods: ['chicken', 'sweetPotato', 'tahini'], description: 'Chicken with sweet potato and tahini' }] }
+        ]
+      },
+      {
+        day: 6,
+        meals: [
+          { time: 'Breakfast', options: [{ foods: ['egg', 'avocado', 'bamba'], description: 'Hard-boiled egg with avocado and Bamba (crushed)' }] },
+          { time: 'Lunch', options: [{ foods: ['lamb', 'carrots', 'hummus'], description: 'Ground lamb with vegetables and hummus' }] },
+          { time: 'Dinner', options: [{ foods: ['sardines', 'sweetPotato', 'oliveOil'], description: 'Sardines (mashed) with sweet potato and olive oil' }] }
+        ]
+      },
+      {
+        day: 7,
+        meals: [
+          { time: 'Breakfast', options: [{ foods: ['egg', 'avocado'], description: 'Omelet with avocado (if baby handles texture)' }] },
+          { time: 'Lunch', options: [{ foods: ['beef', 'spinach', 'almondButter'], description: 'Beef with vegetables and almond butter' }] },
+          { time: 'Dinner', options: [{ foods: ['whitefish', 'peas', 'tahini'], description: 'White fish with peas and tahini' }] }
+        ]
+      }
+    ]
+  },
+  'month3': {
+    name: 'Month 3: Age 8 Months',
+    ageRange: '8 months',
+    goals: ['Increase texture complexity toward chopped foods', 'Transition to family meal adaptations', 'Expand vegetable variety significantly'],
+    days: [
+      {
+        day: 1,
+        meals: [
+          { time: 'Breakfast', options: [{ foods: ['egg', 'spinach'], description: 'Omelet strips with spinach (finger food)' }] },
+          { time: 'Lunch', options: [{ foods: ['beef', 'egg', 'carrots', 'tahini'], description: 'Meatballs (beef + egg binder) with roasted vegetable strips and tahini dip' }] },
+          { time: 'Dinner', options: [{ foods: ['salmon', 'broccoli', 'oliveOil'], description: 'Salmon fishcake with steamed broccoli and olive oil' }] }
+        ]
+      },
+      {
+        day: 2,
+        meals: [
+          { time: 'Breakfast', options: [{ foods: ['egg', 'avocado', 'bamba'], description: 'Scrambled egg with avocado and Bamba on the side' }] },
+          { time: 'Lunch', options: [{ foods: ['chicken', 'hummus'], description: 'Chicken thigh (very tender, shredded) with hummus and cucumber' }] },
+          { time: 'Dinner', options: [{ foods: ['lamb', 'sweetPotato', 'almondButter'], description: 'Ground lamb with sweet potato mash and almond butter' }] }
+        ]
+      },
+      {
+        day: 3,
+        meals: [
+          { time: 'Breakfast', options: [{ foods: ['egg', 'avocado', 'peanutButter'], description: 'Hard-boiled egg with avocado slices and peanut butter' }] },
+          { time: 'Lunch', options: [{ foods: ['whitefish', 'tahini', 'carrots'], description: 'White fish with tahini sauce and vegetables' }] },
+          { time: 'Dinner', options: [{ foods: ['beef', 'broccoli', 'oliveOil'], description: 'Beef with soft-cooked vegetables and olive oil' }] }
+        ]
+      },
+      {
+        day: 4,
+        meals: [
+          { time: 'Breakfast', options: [{ foods: ['egg', 'carrots', 'almondButter'], description: 'Scrambled egg with vegetables and almond butter' }] },
+          { time: 'Lunch', options: [{ foods: ['sardines', 'avocado'], description: 'Sardines (mashed) with avocado on soft bread' }] },
+          { time: 'Dinner', options: [{ foods: ['chicken', 'butternutSquash', 'tahini'], description: 'Chicken meatballs with vegetables and tahini' }] }
+        ]
+      },
+      {
+        day: 5,
+        meals: [
+          { time: 'Breakfast', options: [{ foods: ['egg', 'avocado'], description: 'Egg patty (scrambled egg formed into patty) with avocado' }] },
+          { time: 'Lunch', options: [{ foods: ['beef', 'sweetPotato', 'peanutButter'], description: 'Ground beef with vegetables and peanut butter' }] },
+          { time: 'Dinner', options: [{ foods: ['mackerel', 'peas', 'oliveOil'], description: 'Mackerel with mashed potato and peas, olive oil' }] }
+        ]
+      },
+      {
+        day: 6,
+        meals: [
+          { time: 'Breakfast', options: [{ foods: ['egg', 'spinach', 'tahini'], description: 'Omelet with vegetables and tahini' }] },
+          { time: 'Lunch', options: [{ foods: ['lamb', 'chickenLiver', 'carrots'], description: 'Lamb meatloaf (with small amount liver) with vegetables' }] },
+          { time: 'Dinner', options: [{ foods: ['salmon', 'quinoa', 'oliveOil'], description: 'Salmon with quinoa and olive oil' }] }
+        ]
+      },
+      {
+        day: 7,
+        meals: [
+          { time: 'Breakfast', options: [{ foods: ['egg', 'salmon', 'avocado'], description: 'Scrambled egg with smoked fish and avocado' }] },
+          { time: 'Lunch', options: [{ foods: ['beef', 'sweetPotato', 'almondButter'], description: 'Slow-cooked beef (shredded) with root vegetables and almond butter' }] },
+          { time: 'Dinner', options: [{ foods: ['lentils', 'oliveOil'], description: 'Lentil dal with olive oil and soft chapati' }] }
+        ]
+      }
+    ]
+  },
+  'month4-6': {
+    name: 'Months 4-6: Ages 9-12 Months',
+    ageRange: '9-12 months',
+    goals: ['Transition to family meals', 'Maintain daily animal-source food', 'Sustain allergen exposures through toddlerhood', 'Establish healthy eating patterns'],
+    days: [
+      {
+        day: 1,
+        meals: [
+          { time: 'Breakfast', options: [{ foods: ['egg', 'spinach', 'mushrooms', 'avocado'], description: 'Egg scramble with spinach, mushrooms, avocado' }] },
+          { time: 'Lunch', options: [{ foods: ['beef', 'carrots', 'oliveOil'], description: 'Beef stew with root vegetables, bone broth, olive oil' }] },
+          { time: 'Dinner', options: [{ foods: ['salmon', 'sweetPotato', 'broccoli'], description: 'Salmon with sweet potato mash and broccoli trees' }] },
+          { time: 'Snack', options: [{ foods: ['egg', 'almondButter'], description: 'Hard-boiled egg with almond butter' }] }
+        ]
+      },
+      {
+        day: 2,
+        meals: [
+          { time: 'Breakfast', options: [{ foods: ['egg', 'peanutButter', 'avocado'], description: 'Scrambled egg with peanut butter and avocado' }] },
+          { time: 'Lunch', options: [{ foods: ['chicken', 'hummus', 'carrots'], description: 'Chicken thighs (shredded) with hummus and vegetables' }] },
+          { time: 'Dinner', options: [{ foods: ['lamb', 'tahini', 'butternutSquash'], description: 'Lamb meatballs with tahini sauce and roasted vegetables' }] },
+          { time: 'Snack', options: [{ foods: ['avocado', 'bamba'], description: 'Avocado slices, Bamba' }] }
+        ]
+      },
+      {
+        day: 3,
+        meals: [
+          { time: 'Breakfast', options: [{ foods: ['egg', 'carrots', 'tahini'], description: 'Omelet with vegetables and tahini' }] },
+          { time: 'Lunch', options: [{ foods: ['lentils', 'oliveOil'], description: 'Lentil soup (thick) with olive oil and soft bread' }] },
+          { time: 'Dinner', options: [{ foods: ['whitefish', 'peas', 'carrots'], description: 'White fish with pea puree and carrot sticks' }] },
+          { time: 'Snack', options: [{ foods: ['egg'], description: 'Hard-boiled egg with sunflower seed butter' }] }
+        ]
+      },
+      {
+        day: 4,
+        meals: [
+          { time: 'Breakfast', options: [{ foods: ['egg', 'beef', 'spinach'], description: 'Egg muffins (baked with vegetables and ground beef)' }] },
+          { time: 'Lunch', options: [{ foods: ['turkey', 'butternutSquash', 'almondButter'], description: 'Ground turkey with butternut squash and almond butter' }] },
+          { time: 'Dinner', options: [{ foods: ['sardines', 'avocado'], description: 'Sardines mashed with avocado on toast' }] },
+          { time: 'Snack', options: [{ foods: ['hummus', 'carrots'], description: 'Hummus with soft vegetable sticks' }] }
+        ]
+      },
+      {
+        day: 5,
+        meals: [
+          { time: 'Breakfast', options: [{ foods: ['egg', 'salmon', 'avocado'], description: 'Scrambled eggs with smoked salmon and avocado' }] },
+          { time: 'Lunch', options: [{ foods: ['mackerel', 'peas', 'oliveOil'], description: 'Mackerel (fatty fish) with mashed potato and peas' }] },
+          { time: 'Dinner', options: [{ foods: ['chicken', 'sweetPotato', 'oliveOil'], description: 'Slow-cooked chicken with vegetables and olive oil' }] },
+          { time: 'Snack', options: [{ foods: ['cashewButter'], description: 'Cashew butter on banana slices' }] }
+        ]
+      },
+      {
+        day: 6,
+        meals: [
+          { time: 'Breakfast', options: [{ foods: ['egg', 'spinach', 'broccoli'], description: 'Egg and vegetable frittata (baked)' }] },
+          { time: 'Lunch', options: [{ foods: ['beef', 'carrots', 'oliveOil'], description: 'Beef and vegetable casserole with bone broth' }] },
+          { time: 'Dinner', options: [{ foods: ['whitefish', 'sweetPotato', 'oliveOil'], description: 'Fish pie (white fish, potato, olive oil)' }] },
+          { time: 'Snack', options: [{ foods: ['avocado', 'peanutButter'], description: 'Avocado with peanut butter' }] }
+        ]
+      },
+      {
+        day: 7,
+        meals: [
+          { time: 'Breakfast', options: [{ foods: ['egg', 'chickenLiver', 'spinach'], description: 'Scrambled eggs with chicken liver (small amount) and vegetables' }] },
+          { time: 'Lunch', options: [{ foods: ['lamb', 'carrots', 'butternutSquash'], description: 'Lamb stew with barley and vegetables' }] },
+          { time: 'Dinner', options: [{ foods: ['salmon', 'broccoli', 'peas'], description: 'Salmon fishcakes with steamed vegetables' }] },
+          { time: 'Snack', options: [{ foods: ['egg', 'almondButter'], description: 'Hard-boiled egg, almond butter on apple slices' }] }
+        ]
+      }
+    ]
   }
 };
 
