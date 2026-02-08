@@ -1,15 +1,9 @@
-const CACHE_NAME = 'baby-feeding-tracker-v1';
+const CACHE_NAME = 'baby-feeding-tracker-v2';
 const urlsToCache = [
   './',
   './index.html',
   './baby-feeding-app.jsx',
-  './manifest.json',
-  'https://cdn.tailwindcss.com',
-  'https://unpkg.com/react@18/umd/react.production.min.js',
-  'https://unpkg.com/react-dom@18/umd/react-dom.production.min.js',
-  'https://unpkg.com/recharts@2.5.0/dist/Recharts.js',
-  'https://unpkg.com/lucide-react@0.263.1',
-  'https://unpkg.com/@babel/standalone/babel.min.js'
+  './manifest.json'
 ];
 
 // Install event - cache resources
