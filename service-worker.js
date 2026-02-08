@@ -1,4 +1,4 @@
-const CACHE_NAME = 'baby-feeding-tracker-v3';
+const CACHE_NAME = 'baby-feeding-tracker-v4';
 
 // Local files
 const localUrls = [
@@ -14,8 +14,8 @@ const cdnUrls = [
   'https://unpkg.com/react-dom@18/umd/react-dom.production.min.js',
   'https://unpkg.com/prop-types/prop-types.min.js',
   'https://unpkg.com/recharts@2.5.0/umd/Recharts.js',
-  'https://unpkg.com/@babel/standalone/babel.min.js',
-  'https://cdn.tailwindcss.com'
+  'https://unpkg.com/@babel/standalone/babel.min.js'
+  // Note: cdn.tailwindcss.com excluded - does not support CORS, cannot be precached
 ];
 
 const urlsToCache = [...localUrls, ...cdnUrls];
