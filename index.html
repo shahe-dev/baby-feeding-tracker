@@ -7,51 +7,56 @@
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="apple-mobile-web-app-title" content="Baby Feeding">
-  <meta name="theme-color" content="#6366f1">
-  
-  <title>Baby Feeding Tracker - Evidence-Based Nutrition</title>
-  
+  <meta name="theme-color" content="#0ea5e9">
+
+  <title>Baby Feeding Tracker</title>
+
   <!-- Favicon -->
-  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>👶</text></svg>">
-  
+  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' fill='%230ea5e9' rx='20'/><text x='50%25' y='55%25' dominant-baseline='middle' text-anchor='middle' font-size='60' fill='white' font-family='sans-serif'>B</text></svg>">
+
   <!-- Apple Touch Icons -->
-  <link rel="apple-touch-icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 180 180'><rect width='180' height='180' fill='%236366f1'/><text x='50%' y='50%' dominant-baseline='middle' text-anchor='middle' font-size='100'>👶</text></svg>">
-  
+  <link rel="apple-touch-icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 180 180'><rect width='180' height='180' fill='%230ea5e9' rx='40'/><text x='50%25' y='55%25' dominant-baseline='middle' text-anchor='middle' font-size='100' fill='white' font-family='sans-serif'>B</text></svg>">
+
   <!-- Manifest -->
   <link rel="manifest" href="manifest.json">
-  
+
   <!-- Tailwind CSS -->
-  <script src="https://cdn.tailwindcss.com"></script>
-  
+  <script crossorigin="anonymous" src="https://cdn.tailwindcss.com"></script>
+
   <style>
     * {
       -webkit-tap-highlight-color: transparent;
     }
-    
+
     body {
       overscroll-behavior-y: none;
       -webkit-font-smoothing: antialiased;
     }
-    
+
+    /* Prevent iOS input zoom */
+    input, textarea, select {
+      font-size: 16px !important;
+    }
+
     /* iOS Safe Area Insets */
     .safe-top {
       padding-top: env(safe-area-inset-top);
     }
-    
+
     .safe-bottom {
       padding-bottom: env(safe-area-inset-bottom);
     }
-    
+
     /* Loading animation */
     .spinner {
-      border: 3px solid #f3f4f6;
-      border-top: 3px solid #6366f1;
+      border: 3px solid #e0f2fe;
+      border-top: 3px solid #0ea5e9;
       border-radius: 50%;
       width: 40px;
       height: 40px;
       animation: spin 1s linear infinite;
     }
-    
+
     @keyframes spin {
       0% { transform: rotate(0deg); }
       100% { transform: rotate(360deg); }
@@ -67,11 +72,61 @@
       width: 0px;
       background: transparent;
     }
+
+    /* Update banner */
+    .update-banner {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      background: #0ea5e9;
+      color: white;
+      text-align: center;
+      padding: 12px 16px;
+      z-index: 9999;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      gap: 12px;
+      font-size: 14px;
+      font-family: system-ui, -apple-system, sans-serif;
+    }
+    .update-banner button {
+      background: white;
+      color: #0ea5e9;
+      border: none;
+      padding: 6px 16px;
+      border-radius: 8px;
+      font-weight: 600;
+      font-size: 14px;
+      cursor: pointer;
+    }
+
+    /* Toast notification */
+    .toast {
+      position: fixed;
+      bottom: 100px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: #1e293b;
+      color: white;
+      padding: 12px 24px;
+      border-radius: 12px;
+      font-size: 14px;
+      font-family: system-ui, -apple-system, sans-serif;
+      z-index: 9999;
+      opacity: 0;
+      transition: opacity 0.3s ease;
+      pointer-events: none;
+    }
+    .toast.show {
+      opacity: 1;
+    }
   </style>
 </head>
 <body>
   <div id="root">
-    <div style="display: flex; justify-content: center; align-items: center; height: 100vh; background: linear-gradient(to bottom right, #6366f1, #a855f7);">
+    <div style="display: flex; justify-content: center; align-items: center; height: 100vh; background: linear-gradient(to bottom right, #0ea5e9, #38bdf8);">
       <div style="text-align: center; color: white;">
         <div class="spinner" style="margin: 0 auto 20px;"></div>
         <p style="font-size: 18px; font-weight: bold;">Loading Baby Feeding Tracker...</p>
@@ -79,48 +134,78 @@
     </div>
   </div>
 
+  <!-- Toast container -->
+  <div id="toast" class="toast"></div>
+
   <!-- React and Dependencies -->
-  <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
-  <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
-  <script src="https://unpkg.com/prop-types/prop-types.min.js"></script>
-  <script src="https://unpkg.com/recharts@2.5.0/umd/Recharts.js"></script>
+  <script crossorigin="anonymous" src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+  <script crossorigin="anonymous" src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+  <script crossorigin="anonymous" src="https://unpkg.com/prop-types/prop-types.min.js"></script>
+  <script crossorigin="anonymous" src="https://unpkg.com/recharts@2.5.0/umd/Recharts.js"></script>
   <!-- Babel Standalone for JSX -->
-  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+  <script crossorigin="anonymous" src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
 
   <!-- Your App Component -->
   <script type="text/babel" data-presets="react" src="baby-feeding-app.jsx"></script>
 
-  <!-- Service Worker Registration -->
+  <!-- Service Worker Registration with Update Detection -->
   <script>
+    // Global toast function
+    window.showToast = function(message, duration) {
+      duration = duration || 2000;
+      var el = document.getElementById('toast');
+      if (el) {
+        el.textContent = message;
+        el.classList.add('show');
+        setTimeout(function() { el.classList.remove('show'); }, duration);
+      }
+    };
+
     if ('serviceWorker' in navigator) {
-      window.addEventListener('load', () => {
+      window.addEventListener('load', function() {
         navigator.serviceWorker.register('./service-worker.js')
-          .then(registration => {
+          .then(function(registration) {
             console.log('Service Worker registered successfully:', registration.scope);
+
+            // Check for updates
+            registration.addEventListener('updatefound', function() {
+              var newWorker = registration.installing;
+              newWorker.addEventListener('statechange', function() {
+                if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
+                  showUpdateBanner(newWorker);
+                }
+              });
+            });
           })
-          .catch(error => {
+          .catch(function(error) {
             console.log('Service Worker registration failed:', error);
           });
       });
     }
 
-    // Prevent iOS bounce scroll
-    document.addEventListener('touchmove', function(e) {
-      if (e.target.closest('.overflow-y-auto')) return;
-      e.preventDefault();
-    }, { passive: false });
+    function showUpdateBanner(worker) {
+      var banner = document.createElement('div');
+      banner.className = 'update-banner';
+      banner.innerHTML = '<span>New version available</span><button id="update-btn">Refresh</button>';
+      document.body.appendChild(banner);
+
+      document.getElementById('update-btn').addEventListener('click', function() {
+        worker.postMessage({ type: 'SKIP_WAITING' });
+        window.location.reload();
+      });
+    }
 
     // Add to Home Screen prompt for iOS
-    let deferredPrompt;
-    window.addEventListener('beforeinstallprompt', (e) => {
+    var deferredPrompt;
+    window.addEventListener('beforeinstallprompt', function(e) {
       e.preventDefault();
       deferredPrompt = e;
     });
 
     // Detect if running as installed PWA
-    const isStandalone = window.matchMedia('(display-mode: standalone)').matches || 
-                        window.navigator.standalone === true;
-    
+    var isStandalone = window.matchMedia('(display-mode: standalone)').matches ||
+                       window.navigator.standalone === true;
+
     if (isStandalone) {
       console.log('Running as installed PWA');
     } else {
@@ -130,23 +215,22 @@
 
   <!-- Installation Instructions Modal (shows on first visit) -->
   <script>
-    // Show installation guide if not installed and first visit
-    const hasSeenGuide = localStorage.getItem('hasSeenInstallGuide');
-    const isInstalled = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone;
-    
+    var hasSeenGuide = localStorage.getItem('hasSeenInstallGuide');
+    var isInstalled = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone;
+
     if (!hasSeenGuide && !isInstalled) {
-      setTimeout(() => {
-        const iOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
-        
+      setTimeout(function() {
+        var iOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
+
         if (iOS) {
-          const showGuide = confirm(
-            "📱 Install this app on your iPhone!\n\n" +
-            "1. Tap the Share button (⬆️) at the bottom\n" +
+          var showGuide = confirm(
+            "Install this app on your iPhone!\n\n" +
+            "1. Tap the Share button at the bottom\n" +
             "2. Scroll and tap 'Add to Home Screen'\n" +
             "3. Tap 'Add' in the top right\n\n" +
             "The app will work offline and look like a native app!"
           );
-          
+
           if (showGuide) {
             localStorage.setItem('hasSeenInstallGuide', 'true');
           }

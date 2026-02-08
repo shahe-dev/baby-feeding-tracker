@@ -1,58 +1,96 @@
-const CACHE_NAME = 'baby-feeding-tracker-v2';
-const urlsToCache = [
+const CACHE_NAME = 'baby-feeding-tracker-v3';
+
+// Local files
+const localUrls = [
   './',
   './index.html',
   './baby-feeding-app.jsx',
   './manifest.json'
 ];
 
-// Install event - cache resources
+// CDN dependencies that must be cached for offline use
+const cdnUrls = [
+  'https://unpkg.com/react@18/umd/react.production.min.js',
+  'https://unpkg.com/react-dom@18/umd/react-dom.production.min.js',
+  'https://unpkg.com/prop-types/prop-types.min.js',
+  'https://unpkg.com/recharts@2.5.0/umd/Recharts.js',
+  'https://unpkg.com/@babel/standalone/babel.min.js',
+  'https://cdn.tailwindcss.com'
+];
+
+const urlsToCache = [...localUrls, ...cdnUrls];
+
+// Trusted CDN origins for caching cross-origin responses
+const trustedOrigins = [
+  'https://unpkg.com',
+  'https://cdn.tailwindcss.com'
+];
+
+function isTrustedOrigin(url) {
+  return trustedOrigins.some(origin => url.startsWith(origin));
+}
+
+// Install event - cache all resources including CDN
 self.addEventListener('install', (event) => {
   event.waitUntil(
     caches.open(CACHE_NAME)
       .then((cache) => {
-        console.log('Opened cache');
-        return cache.addAll(urlsToCache);
+        console.log('Caching local files...');
+        return cache.addAll(localUrls).then(() => {
+          console.log('Caching CDN dependencies...');
+          // Cache CDN resources individually so one failure doesn't block all
+          return Promise.allSettled(
+            cdnUrls.map(url =>
+              fetch(url, { mode: 'cors' })
+                .then(response => {
+                  if (response.ok) {
+                    return cache.put(url, response);
+                  }
+                })
+                .catch(err => console.warn('Failed to cache:', url, err))
+            )
+          );
+        });
       })
       .catch((error) => {
         console.error('Cache installation failed:', error);
       })
   );
-  // Force the waiting service worker to become active
   self.skipWaiting();
 });
 
-// Fetch event - serve from cache when offline
+// Fetch event - serve from cache, fallback to network
 self.addEventListener('fetch', (event) => {
   event.respondWith(
     caches.match(event.request)
       .then((response) => {
-        // Cache hit - return response
         if (response) {
           return response;
         }
 
-        // Clone the request
         const fetchRequest = event.request.clone();
 
         return fetch(fetchRequest).then((response) => {
-          // Check if valid response
-          if (!response || response.status !== 200 || response.type !== 'basic') {
+          // Only cache valid responses from local or trusted origins
+          if (!response || response.status !== 200) {
             return response;
           }
 
-          // Clone the response
-          const responseToCache = response.clone();
+          const url = event.request.url;
+          const isLocal = response.type === 'basic';
+          const isTrusted = isTrustedOrigin(url);
 
-          caches.open(CACHE_NAME)
-            .then((cache) => {
-              cache.put(event.request, responseToCache);
-            });
+          if (isLocal || isTrusted) {
+            const responseToCache = response.clone();
+            caches.open(CACHE_NAME)
+              .then((cache) => {
+                cache.put(event.request, responseToCache);
+              });
+          }
 
           return response;
         }).catch((error) => {
           console.log('Fetch failed; returning offline page instead.', error);
-          // You could return a custom offline page here
           return caches.match('./index.html');
         });
       })
@@ -62,7 +100,7 @@ self.addEventListener('fetch', (event) => {
 // Activate event - clean up old caches
 self.addEventListener('activate', (event) => {
   const cacheWhitelist = [CACHE_NAME];
-  
+
   event.waitUntil(
     caches.keys().then((cacheNames) => {
       return Promise.all(
@@ -75,27 +113,32 @@ self.addEventListener('activate', (event) => {
       );
     })
   );
-  
-  // Take control of all clients immediately
+
   return self.clients.claim();
 });
 
-// Background sync for future feature (optional)
+// Listen for skip-waiting messages from the main thread
+self.addEventListener('message', (event) => {
+  if (event.data && event.data.type === 'SKIP_WAITING') {
+    self.skipWaiting();
+  }
+});
+
+// Background sync stub
 self.addEventListener('sync', (event) => {
   if (event.tag === 'sync-feeding-data') {
     event.waitUntil(
-      // Sync data when back online
       console.log('Background sync triggered')
     );
   }
 });
 
-// Push notification support for future feature (optional)
+// Push notification stub
 self.addEventListener('push', (event) => {
   const options = {
     body: event.data ? event.data.text() : 'New notification',
-    icon: 'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><text y=".9em" font-size="90">👶</text></svg>',
-    badge: 'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><text y=".9em" font-size="90">👶</text></svg>',
+    icon: 'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><text y=".9em" font-size="90">B</text></svg>',
+    badge: 'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><text y=".9em" font-size="90">B</text></svg>',
     vibrate: [200, 100, 200]
   };
 

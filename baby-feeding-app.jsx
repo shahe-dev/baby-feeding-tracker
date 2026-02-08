@@ -698,26 +698,122 @@ const MEAL_PLANS = {
   }
 };
 
+// Food categories for organized selection
+const FOOD_CATEGORIES = {
+  'Proteins': ['beef', 'lamb', 'chicken', 'turkey', 'chickenLiver'],
+  'Fish': ['salmon', 'mackerel', 'whitefish', 'sardines'],
+  'Eggs': ['egg'],
+  'Vegetables & Grains': ['sweetPotato', 'spinach', 'broccoli', 'carrots', 'lentils', 'butternutSquash', 'peas', 'kale', 'mushrooms', 'quinoa'],
+  'Fats & Oils': ['avocado', 'oliveOil'],
+  'Allergen Foods': ['peanutButter', 'bamba', 'tahini', 'almondButter', 'hummus', 'cashewButter']
+};
+
+// Maps allergens to suggested foods
+const ALLERGEN_SUGGESTIONS = {
+  peanut: ['peanutButter', 'bamba'],
+  egg: ['egg'],
+  sesame: ['tahini', 'hummus'],
+  fish: ['salmon', 'mackerel', 'whitefish', 'sardines'],
+  'tree nuts': ['almondButter', 'cashewButter']
+};
+
+// Preset quick notes for feed logging
+const QUICK_NOTES = [
+  'Loved it',
+  'Tried a little',
+  'Refused',
+  'Messy but fun',
+  'Signs of reaction'
+];
+
+// Reaction options for symptom tracking
+const REACTION_OPTIONS = [
+  'None observed',
+  'Rash',
+  'Hives',
+  'Swelling',
+  'Vomiting',
+  'Diarrhea',
+  'Fussiness'
+];
+
+const REACTION_SEVERITY = ['Mild', 'Moderate', 'Severe'];
+
+// Error Boundary for crash recovery
+class ErrorBoundary extends React.Component {
+  constructor(props) {
+    super(props);
+    this.state = { hasError: false, error: null };
+  }
+  static getDerivedStateFromError(error) {
+    return { hasError: true, error: error };
+  }
+  componentDidCatch(error, errorInfo) {
+    console.error('App Error:', error, errorInfo);
+  }
+  render() {
+    if (this.state.hasError) {
+      return React.createElement('div', {
+        style: { padding: '40px 20px', textAlign: 'center', fontFamily: 'system-ui, -apple-system, sans-serif' }
+      },
+        React.createElement('h2', { style: { marginBottom: '12px', color: '#1e293b' } }, 'Something went wrong'),
+        React.createElement('p', { style: { color: '#64748b', marginBottom: '20px' } }, 'Your data is safe. Try refreshing the app.'),
+        React.createElement('button', {
+          onClick: () => window.location.reload(),
+          style: { padding: '12px 24px', background: '#0ea5e9', color: 'white', border: 'none', borderRadius: '12px', fontSize: '16px', fontWeight: '600', cursor: 'pointer' }
+        }, 'Refresh App'),
+        React.createElement('button', {
+          onClick: () => this.setState({ hasError: false }),
+          style: { padding: '12px 24px', background: '#e2e8f0', color: '#475569', border: 'none', borderRadius: '12px', fontSize: '16px', marginLeft: '12px', cursor: 'pointer' }
+        }, 'Try Again')
+      );
+    }
+    return this.props.children;
+  }
+}
+
 // Main App Component
 function BabyFeedingTracker() {
-  const [currentView, setCurrentView] = useState('dashboard');
-  const [babyProfile, setBabyProfile] = useState(() => {
-    const saved = localStorage.getItem('babyProfile');
-    return saved ? JSON.parse(saved) : {
-      name: '',
-      birthDate: '',
-      weight: [],
-      height: []
-    };
+  // URL param handling for manifest shortcuts
+  const [currentView, setCurrentView] = useState(() => {
+    const params = new URLSearchParams(window.location.search);
+    const view = params.get('view');
+    if (['log', 'meals', 'progress', 'profile', 'dashboard'].includes(view)) return view;
+    return 'dashboard';
   });
-  
+
+  const defaultProfile = {
+    name: '',
+    birthDate: '',
+    solidStartDate: '',
+    weight: [],
+    height: []
+  };
+
+  const [babyProfile, setBabyProfile] = useState(() => {
+    try {
+      const saved = localStorage.getItem('babyProfile');
+      return saved ? { ...defaultProfile, ...JSON.parse(saved) } : defaultProfile;
+    } catch (e) {
+      console.error('Profile data corrupted:', e);
+      return defaultProfile;
+    }
+  });
+
   const [feedingLog, setFeedingLog] = useState(() => {
-    const saved = localStorage.getItem('feedingLog');
-    return saved ? JSON.parse(saved) : [];
+    try {
+      const saved = localStorage.getItem('feedingLog');
+      return saved ? JSON.parse(saved) : [];
+    } catch (e) {
+      console.error('Feeding log corrupted:', e);
+      return [];
+    }
   });
 
   const [selectedWeek, setSelectedWeek] = useState('week1-2');
   const [expandedFood, setExpandedFood] = useState(null);
+  const [showGroceryList, setShowGroceryList] = useState(false);
+  const [groceryChecked, setGroceryChecked] = useState({});
 
   // Save to localStorage whenever data changes
   useEffect(() => {
@@ -785,103 +881,355 @@ function BabyFeedingTracker() {
     return allergenCounts;
   };
 
+  // Get baby's display name
+  const babyName = babyProfile.name || 'Baby';
+
+  // Get today's meal plan based on solid start date
+  const getTodaysMealPlan = () => {
+    if (!babyProfile.solidStartDate) return null;
+    const start = new Date(babyProfile.solidStartDate);
+    const now = new Date();
+    const daysSinceStart = Math.floor((now - start) / (1000 * 60 * 60 * 24));
+    if (daysSinceStart < 0) return null;
+
+    let planKey, dayIndex;
+    if (daysSinceStart < 14) {
+      planKey = 'week1-2';
+      dayIndex = daysSinceStart % 7;
+    } else if (daysSinceStart < 28) {
+      planKey = 'week3-4';
+      dayIndex = (daysSinceStart - 14) % 7;
+    } else if (daysSinceStart < 56) {
+      planKey = 'month2';
+      dayIndex = (daysSinceStart - 28) % 7;
+    } else if (daysSinceStart < 84) {
+      planKey = 'month3';
+      dayIndex = (daysSinceStart - 56) % 7;
+    } else {
+      planKey = 'month4-6';
+      dayIndex = (daysSinceStart - 84) % 7;
+    }
+
+    const plan = MEAL_PLANS[planKey];
+    const day = plan.days[dayIndex];
+    return { plan, day, planKey, dayNumber: dayIndex + 1 };
+  };
+
+  // Calculate feeding streak
+  const getStreak = () => {
+    const dates = [...new Set(feedingLog.map(f =>
+      new Date(f.date).toISOString().split('T')[0]
+    ))].sort().reverse();
+
+    let streak = 0;
+    const today = new Date();
+    for (let i = 0; i < dates.length; i++) {
+      const expected = new Date(today);
+      expected.setDate(expected.getDate() - i);
+      if (dates[i] === expected.toISOString().split('T')[0]) {
+        streak++;
+      } else {
+        break;
+      }
+    }
+    return streak;
+  };
+
+  // Calculate milestones
+  const getMilestones = () => {
+    const uniqueFoods = new Set();
+    feedingLog.forEach(f => f.foods?.forEach(id => uniqueFoods.add(id)));
+    const totalUnique = uniqueFoods.size;
+    const totalFeeds = feedingLog.length;
+    const streak = getStreak();
+
+    const milestones = [];
+    if (totalUnique >= 5) milestones.push({ label: '5 different foods tried', achieved: true });
+    if (totalUnique >= 10) milestones.push({ label: '10 different foods tried', achieved: true });
+    if (totalUnique >= 20) milestones.push({ label: '20 different foods tried', achieved: true });
+    if (totalFeeds >= 10) milestones.push({ label: '10 meals logged', achieved: true });
+    if (totalFeeds >= 50) milestones.push({ label: '50 meals logged', achieved: true });
+    if (streak >= 7) milestones.push({ label: '7-day feeding streak', achieved: true });
+    if (streak >= 30) milestones.push({ label: '30-day feeding streak', achieved: true });
+
+    // Check if all 5 allergens met this week
+    const stats = getAllergenStats();
+    const allAllergensMet = Object.values(stats).every(c => c >= 3);
+    if (allAllergensMet && totalFeeds > 0) {
+      milestones.push({ label: 'All allergens covered this week', achieved: true });
+    }
+
+    return { milestones, totalUnique, totalFeeds };
+  };
+
+  // Delete a feed entry
+  const deleteFeedEntry = (entryId) => {
+    setFeedingLog(feedingLog.filter(f => f.id !== entryId));
+  };
+
+  // Export data as JSON backup
+  const exportData = () => {
+    const data = {
+      version: 1,
+      exportDate: new Date().toISOString(),
+      babyProfile: babyProfile,
+      feedingLog: feedingLog
+    };
+    const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'baby-feeding-backup-' + new Date().toISOString().split('T')[0] + '.json';
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+    if (window.showToast) window.showToast('Backup downloaded');
+  };
+
+  // Import data from JSON backup
+  const importData = (file) => {
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      try {
+        const data = JSON.parse(e.target.result);
+        if (data.version && data.babyProfile && data.feedingLog) {
+          setBabyProfile({ ...defaultProfile, ...data.babyProfile });
+          setFeedingLog(data.feedingLog);
+          if (window.showToast) window.showToast('Data restored successfully');
+        } else {
+          alert('Invalid backup file format');
+        }
+      } catch (err) {
+        alert('Could not read backup file');
+      }
+    };
+    reader.readAsText(file);
+  };
+
+  // Get recently used foods (from last 3 feeds)
+  const getRecentFoods = () => {
+    const recent = new Set();
+    feedingLog.slice(0, 3).forEach(f => f.foods?.forEach(id => recent.add(id)));
+    return [...recent];
+  };
+
+  // Get grocery list for current week's plan
+  const getGroceryList = () => {
+    const plan = MEAL_PLANS[selectedWeek];
+    if (!plan) return {};
+    const foodIds = new Set();
+    plan.days.forEach(day => {
+      day.meals.forEach(meal => {
+        meal.options.forEach(opt => {
+          opt.foods.forEach(id => foodIds.add(id));
+        });
+        if (meal.allergenIntro) foodIds.add(meal.allergenIntro.food);
+      });
+    });
+
+    const grouped = {};
+    Object.entries(FOOD_CATEGORIES).forEach(([category, ids]) => {
+      const matching = ids.filter(id => foodIds.has(id));
+      if (matching.length > 0) grouped[category] = matching;
+    });
+    return grouped;
+  };
+
   // Dashboard View
   const DashboardView = () => {
-    const ageMonths = getAgeInMonths();
     const allergenStats = getAllergenStats();
-    const latestWeight = babyProfile.weight[babyProfile.weight.length - 1];
-    const latestHeight = babyProfile.height[babyProfile.height.length - 1];
+    const todaysPlan = getTodaysMealPlan();
+    const streak = getStreak();
+    const { milestones, totalUnique } = getMilestones();
+    const allAllergensMet = Object.values(allergenStats).every(c => c >= 3);
+    const todayFeeds = feedingLog.filter(f => {
+      const feedDate = new Date(f.date).toISOString().split('T')[0];
+      const today = new Date().toISOString().split('T')[0];
+      return feedDate === today;
+    });
 
     return (
-      <div className="p-4 space-y-6">
-        {/* Baby Profile Card */}
-        <div className="bg-gradient-to-br from-blue-50 to-indigo-50 rounded-2xl p-6 shadow-lg">
-          <div className="flex items-center gap-3 mb-4">
-            <Baby className="w-8 h-8 text-indigo-600" />
-            <div>
-              <h2 className="text-2xl font-bold text-gray-800">{babyProfile.name || 'Baby'}</h2>
-              <p className="text-gray-600">{ageMonths} months old</p>
-            </div>
-          </div>
-          
-          <div className="grid grid-cols-2 gap-4">
-            <div className="bg-white rounded-xl p-4">
-              <div className="flex items-center gap-2 mb-2">
-                <Scale className="w-5 h-5 text-indigo-600" />
-                <span className="text-sm text-gray-600">Weight</span>
-              </div>
-              <p className="text-2xl font-bold text-gray-800">
-                {latestWeight ? `${latestWeight.value} kg` : '-'}
-              </p>
-            </div>
-            
-            <div className="bg-white rounded-xl p-4">
-              <div className="flex items-center gap-2 mb-2">
-                <Ruler className="w-5 h-5 text-indigo-600" />
-                <span className="text-sm text-gray-600">Height</span>
-              </div>
-              <p className="text-2xl font-bold text-gray-800">
-                {latestHeight ? `${latestHeight.value} cm` : '-'}
-              </p>
-            </div>
-          </div>
-        </div>
+      <div className="p-4 space-y-5">
+        {/* Today's Meals Card */}
+        {todaysPlan ? (
+          <div className="bg-white rounded-2xl p-5 shadow-lg">
+            <h3 className="text-lg font-bold text-gray-800 mb-1 flex items-center gap-2">
+              <Apple className="w-6 h-6 text-sky-500" />
+              {babyName}'s meals today
+            </h3>
+            <p className="text-sm text-gray-500 mb-4">{todaysPlan.plan.name} - Day {todaysPlan.dayNumber}</p>
 
-        {/* Weekly Allergen Tracker */}
-        <div className="bg-white rounded-2xl p-6 shadow-lg">
-          <h3 className="text-lg font-bold text-gray-800 mb-4 flex items-center gap-2">
+            <div className="space-y-3">
+              {todaysPlan.day.meals.map((meal, mealIdx) => (
+                <div key={mealIdx} className="bg-sky-50 rounded-xl p-4">
+                  <div className="flex items-center justify-between mb-2">
+                    <span className="font-semibold text-gray-700">{meal.time}</span>
+                  </div>
+                  {meal.options.map((option, optIdx) => (
+                    <div key={optIdx} className="mb-2 last:mb-0">
+                      <p className="text-sm text-gray-700 mb-2">{option.description}</p>
+                      <button
+                        onClick={() => {
+                          const mealTypeMap = { 'Mid-morning': 'breakfast', 'Breakfast': 'breakfast', 'Lunch': 'lunch', 'Dinner': 'dinner', 'Afternoon': 'lunch', 'Snack': 'snack' };
+                          addFeedingEntry({
+                            mealType: mealTypeMap[meal.time] || 'breakfast',
+                            foods: option.foods,
+                            amount: 'As suggested',
+                            notes: '',
+                            description: option.description
+                          });
+                          if (window.showToast) window.showToast('Logged!');
+                        }}
+                        className="w-full py-2 bg-green-50 text-green-700 rounded-lg text-sm font-medium border border-green-200 active:bg-green-100 min-h-[44px]"
+                      >
+                        Log This Meal
+                      </button>
+                    </div>
+                  ))}
+                  {meal.allergenIntro && (
+                    <div className="mt-2 bg-orange-50 border-l-4 border-orange-300 p-3 rounded">
+                      <p className="text-sm font-medium text-orange-800">
+                        Allergen intro: {FOOD_DATABASE[meal.allergenIntro.food]?.name}
+                      </p>
+                      <p className="text-sm text-orange-700">{meal.allergenIntro.note}</p>
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
+          </div>
+        ) : (
+          <div className="bg-sky-50 rounded-2xl p-5 shadow-lg">
+            <h3 className="text-lg font-bold text-gray-800 mb-2 flex items-center gap-2">
+              <Apple className="w-6 h-6 text-sky-500" />
+              Get started with meal plans
+            </h3>
+            <p className="text-sm text-gray-600 mb-3">
+              Set your baby's solids start date in the Profile tab to see daily meal suggestions here.
+            </p>
+            <button
+              onClick={() => setCurrentView('profile')}
+              className="py-2 px-4 bg-sky-500 text-white rounded-lg text-sm font-medium min-h-[44px]"
+            >
+              Set Start Date
+            </button>
+          </div>
+        )}
+
+        {/* Streak & Quick Stats */}
+        {feedingLog.length > 0 && (
+          <div className="flex gap-3">
+            <div className="flex-1 bg-white rounded-xl p-4 shadow text-center">
+              <p className="text-2xl font-bold text-sky-500">{streak}</p>
+              <p className="text-sm text-gray-500">day streak</p>
+            </div>
+            <div className="flex-1 bg-white rounded-xl p-4 shadow text-center">
+              <p className="text-2xl font-bold text-green-600">{totalUnique}</p>
+              <p className="text-sm text-gray-500">foods tried</p>
+            </div>
+            <div className="flex-1 bg-white rounded-xl p-4 shadow text-center">
+              <p className="text-2xl font-bold text-gray-700">{todayFeeds.length}</p>
+              <p className="text-sm text-gray-500">today</p>
+            </div>
+          </div>
+        )}
+
+        {/* Milestones */}
+        {milestones.length > 0 && (
+          <div className="bg-green-50 rounded-2xl p-4 shadow">
+            <h4 className="text-sm font-bold text-green-800 mb-2 flex items-center gap-2">
+              <CheckCircle className="w-5 h-5 text-green-600" />
+              Milestones reached
+            </h4>
+            <div className="flex flex-wrap gap-2">
+              {milestones.map((m, i) => (
+                <span key={i} className="text-sm bg-green-100 text-green-800 px-3 py-1 rounded-full">{m.label}</span>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Allergen Check-in */}
+        <div className="bg-white rounded-2xl p-5 shadow-lg">
+          <h3 className="text-lg font-bold text-gray-800 mb-2 flex items-center gap-2">
             <CheckCircle className="w-6 h-6 text-green-600" />
-            Allergen Exposure (Last 7 Days)
+            This week's allergen check-in
           </h3>
-          
+          {allAllergensMet && (
+            <div className="bg-green-50 border border-green-200 rounded-xl p-3 mb-4">
+              <p className="text-sm font-medium text-green-800">All allergens covered this week -- nicely done!</p>
+            </div>
+          )}
           <div className="space-y-3">
-            {Object.entries(allergenStats).map(([allergen, count]) => (
-              <div key={allergen}>
-                <div className="flex justify-between mb-1">
-                  <span className="text-sm font-medium capitalize">{allergen}</span>
-                  <span className={`text-sm font-bold ${count >= 3 ? 'text-green-600' : 'text-orange-600'}`}>
-                    {count}/3 minimum
-                  </span>
+            {Object.entries(allergenStats).map(([allergen, count]) => {
+              const suggestion = ALLERGEN_SUGGESTIONS[allergen];
+              const suggestedFood = suggestion ? FOOD_DATABASE[suggestion[0]]?.name : '';
+              return (
+                <div key={allergen}>
+                  <div className="flex justify-between mb-1">
+                    <span className="text-sm font-medium capitalize">{allergen}</span>
+                    {count >= 3 ? (
+                      <span className="text-sm font-medium text-green-600">On track</span>
+                    ) : (
+                      <span className="text-sm text-sky-600">{count}/3 this week</span>
+                    )}
+                  </div>
+                  <div className="w-full bg-gray-100 rounded-full h-2.5">
+                    <div
+                      className={`h-2.5 rounded-full transition-all ${count >= 3 ? 'bg-green-500' : 'bg-sky-400'}`}
+                      style={{ width: `${Math.min((count / 3) * 100, 100)}%` }}
+                    />
+                  </div>
+                  {count < 3 && suggestedFood && (
+                    <p className="text-sm text-gray-500 mt-1">Try adding {suggestedFood} this week</p>
+                  )}
                 </div>
-                <div className="w-full bg-gray-200 rounded-full h-2.5">
-                  <div 
-                    className={`h-2.5 rounded-full ${count >= 3 ? 'bg-green-600' : 'bg-orange-400'}`}
-                    style={{ width: `${Math.min((count / 3) * 100, 100)}%` }}
-                  />
-                </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
+          <p className="text-sm text-gray-400 mt-3">Aim for 3x per week. Missing a day or two is completely normal.</p>
         </div>
 
-        {/* Recent Feeds */}
-        <div className="bg-white rounded-2xl p-6 shadow-lg">
+        {/* Today's Feeds */}
+        <div className="bg-white rounded-2xl p-5 shadow-lg">
           <h3 className="text-lg font-bold text-gray-800 mb-4 flex items-center gap-2">
-            <Clock className="w-6 h-6 text-indigo-600" />
-            Recent Feeds
+            <Clock className="w-6 h-6 text-sky-500" />
+            {todayFeeds.length > 0 ? "Today's feeds" : 'Recent feeds'}
           </h3>
-          
-          {feedingLog.slice(0, 5).map(feed => (
+
+          {(todayFeeds.length > 0 ? todayFeeds : feedingLog.slice(0, 5)).map(feed => (
             <div key={feed.id} className="border-b border-gray-100 py-3 last:border-0">
               <div className="flex justify-between items-start mb-1">
-                <span className="text-sm font-medium text-gray-800">{feed.mealType}</span>
-                <span className="text-xs text-gray-500">
-                  {new Date(feed.date).toLocaleDateString()} {new Date(feed.date).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}
-                </span>
+                <span className="text-sm font-medium text-gray-800 capitalize">{feed.mealType}</span>
+                <div className="flex items-center gap-2">
+                  <span className="text-sm text-gray-400">
+                    {new Date(feed.date).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}
+                  </span>
+                  <button
+                    onClick={() => {
+                      if (confirm('Delete this feed entry?')) deleteFeedEntry(feed.id);
+                    }}
+                    className="text-gray-300 hover:text-red-400 p-1 min-w-[44px] min-h-[44px] flex items-center justify-center"
+                  >
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M3 6h18M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2"/></svg>
+                  </button>
+                </div>
               </div>
               <p className="text-sm text-gray-600">{feed.description}</p>
+              {feed.notes && <p className="text-sm text-gray-400 mt-1">{feed.notes}</p>}
+              {feed.reaction && feed.reaction !== 'None observed' && (
+                <p className="text-sm text-orange-600 mt-1">Reaction: {feed.reaction} {feed.reactionSeverity ? '(' + feed.reactionSeverity + ')' : ''}</p>
+              )}
             </div>
           ))}
-        </div>
 
-        {/* Quick Actions */}
-        <button
-          onClick={() => setCurrentView('log')}
-          className="w-full bg-indigo-600 text-white rounded-xl py-4 font-semibold shadow-lg hover:bg-indigo-700 transition-colors"
-        >
-          <Plus className="w-5 h-5 inline mr-2" />
-          Log New Feed
-        </button>
+          {feedingLog.length === 0 && (
+            <p className="text-sm text-gray-400 py-4 text-center">
+              No feeds logged yet. Start by logging {babyName}'s first meal!
+            </p>
+          )}
+        </div>
       </div>
     );
   };
@@ -889,20 +1237,17 @@ function BabyFeedingTracker() {
   // Meal Plan View
   const MealPlanView = () => {
     const plan = MEAL_PLANS[selectedWeek];
-    
+    const groceryList = getGroceryList();
+
     return (
       <div className="p-4 space-y-4">
-        <div className="bg-gradient-to-r from-indigo-600 to-purple-600 rounded-2xl p-6 text-white shadow-lg">
-          <h2 className="text-2xl font-bold mb-2">{plan.name}</h2>
-          <p className="text-indigo-100 mb-4">Age: {plan.ageRange}</p>
-          
-          <div className="space-y-2">
-            <p className="font-semibold">Goals:</p>
-            <ul className="list-disc list-inside space-y-1 text-sm">
-              {plan.goals.map((goal, idx) => (
-                <li key={idx}>{goal}</li>
-              ))}
-            </ul>
+        <div className="bg-gradient-to-r from-sky-500 to-sky-400 rounded-2xl p-5 text-white shadow-lg">
+          <h2 className="text-xl font-bold mb-1">{plan.name}</h2>
+          <p className="text-sky-100 mb-3">Age: {plan.ageRange}</p>
+          <div className="space-y-1">
+            {plan.goals.map((goal, idx) => (
+              <p key={idx} className="text-sm text-sky-50">- {goal}</p>
+            ))}
           </div>
         </div>
 
@@ -911,10 +1256,10 @@ function BabyFeedingTracker() {
           {Object.entries(MEAL_PLANS).map(([key, value]) => (
             <button
               key={key}
-              onClick={() => setSelectedWeek(key)}
-              className={`px-4 py-2 rounded-xl whitespace-nowrap font-medium transition-colors ${
+              onClick={() => { setSelectedWeek(key); setShowGroceryList(false); }}
+              className={`px-4 py-3 rounded-xl whitespace-nowrap font-medium transition-colors min-h-[44px] ${
                 selectedWeek === key
-                  ? 'bg-indigo-600 text-white'
+                  ? 'bg-sky-500 text-white'
                   : 'bg-gray-100 text-gray-700'
               }`}
             >
@@ -923,93 +1268,148 @@ function BabyFeedingTracker() {
           ))}
         </div>
 
+        {/* Grocery List Toggle */}
+        <button
+          onClick={() => setShowGroceryList(!showGroceryList)}
+          className="w-full py-3 bg-green-50 text-green-700 rounded-xl font-medium border border-green-200 min-h-[44px]"
+        >
+          {showGroceryList ? 'Hide Grocery List' : 'Show Grocery List for This Phase'}
+        </button>
+
+        {/* Grocery List */}
+        {showGroceryList && (
+          <div className="bg-white rounded-2xl p-5 shadow-lg">
+            <h3 className="text-lg font-bold text-gray-800 mb-4">Grocery List</h3>
+            {Object.entries(groceryList).map(([category, foodIds]) => (
+              <div key={category} className="mb-4 last:mb-0">
+                <h4 className="text-sm font-semibold text-gray-600 mb-2">{category}</h4>
+                {foodIds.map(id => (
+                  <label key={id} className="flex items-center gap-3 py-2 border-b border-gray-50 last:border-0 min-h-[44px]">
+                    <input
+                      type="checkbox"
+                      checked={!!groceryChecked[selectedWeek + '-' + id]}
+                      onChange={() => setGroceryChecked({
+                        ...groceryChecked,
+                        [selectedWeek + '-' + id]: !groceryChecked[selectedWeek + '-' + id]
+                      })}
+                      className="w-5 h-5 rounded border-gray-300 text-sky-500 focus:ring-sky-500"
+                    />
+                    <span className={`text-sm ${groceryChecked[selectedWeek + '-' + id] ? 'line-through text-gray-400' : 'text-gray-700'}`}>
+                      {FOOD_DATABASE[id]?.name}
+                    </span>
+                  </label>
+                ))}
+              </div>
+            ))}
+          </div>
+        )}
+
         {/* Daily Meals */}
-        <div className="space-y-4">
-          {plan.days.map(day => (
-            <div key={day.day} className="bg-white rounded-2xl p-5 shadow-lg">
-              <h3 className="text-lg font-bold text-gray-800 mb-4">Day {day.day}</h3>
-              
-              {day.meals.map((meal, mealIdx) => (
-                <div key={mealIdx} className="mb-4 last:mb-0">
-                  <div className="flex items-center gap-2 mb-3">
-                    <Clock className="w-5 h-5 text-indigo-600" />
-                    <span className="font-semibold text-gray-700">{meal.time}</span>
-                  </div>
-                  
-                  {meal.allergenIntro && (
-                    <div className="bg-orange-50 border-l-4 border-orange-400 p-3 mb-3 rounded">
-                      <p className="text-sm font-semibold text-orange-800 mb-1">
-                        Allergen Introduction: {FOOD_DATABASE[meal.allergenIntro.food]?.name}
-                      </p>
-                      <p className="text-xs text-orange-700">{meal.allergenIntro.note}</p>
+        {!showGroceryList && (
+          <div className="space-y-4">
+            {plan.days.map(day => (
+              <div key={day.day} className="bg-white rounded-2xl p-5 shadow-lg">
+                <h3 className="text-lg font-bold text-gray-800 mb-4">Day {day.day}</h3>
+
+                {day.meals.map((meal, mealIdx) => (
+                  <div key={mealIdx} className="mb-4 last:mb-0">
+                    <div className="flex items-center gap-2 mb-3">
+                      <Clock className="w-5 h-5 text-sky-500" />
+                      <span className="font-semibold text-gray-700">{meal.time}</span>
                     </div>
-                  )}
-                  
-                  <div className="space-y-3">
-                    {meal.options.map((option, optIdx) => (
-                      <div key={optIdx} className="bg-gray-50 rounded-xl p-4">
-                        <p className="font-medium text-gray-800 mb-2">{option.description}</p>
-                        
-                        <div className="space-y-2">
-                          {option.foods.map(foodId => {
-                            const food = FOOD_DATABASE[foodId];
-                            return (
-                              <div key={foodId}>
-                                <button
-                                  onClick={() => setExpandedFood(expandedFood === foodId ? null : foodId)}
-                                  className="w-full flex items-center justify-between p-3 bg-white rounded-lg border border-gray-200"
-                                >
-                                  <div className="flex items-center gap-2">
-                                    <Apple className="w-4 h-4 text-green-600" />
-                                    <span className="text-sm font-medium">{food.name}</span>
-                                    {food.allergens.length > 0 && (
-                                      <span className="text-xs bg-orange-100 text-orange-700 px-2 py-1 rounded">
-                                        Allergen
-                                      </span>
-                                    )}
-                                  </div>
-                                  <div className="flex items-center gap-2">
-                                    <span className="text-xs text-gray-600">{getServingSize(foodId)}</span>
-                                    {expandedFood === foodId ? <ChevronDown className="w-4 h-4" /> : <ChevronRight className="w-4 h-4" />}
-                                  </div>
-                                </button>
-                                
-                                {expandedFood === foodId && (
-                                  <div className="mt-2 p-4 bg-indigo-50 rounded-lg border border-indigo-100">
-                                    <div className="mb-3">
-                                      <p className="text-xs font-semibold text-indigo-900 mb-1">Benefits:</p>
-                                      <ul className="list-disc list-inside space-y-1">
-                                        {food.benefits.map((benefit, idx) => (
-                                          <li key={idx} className="text-xs text-gray-700">{benefit}</li>
-                                        ))}
-                                      </ul>
-                                    </div>
-                                    
-                                    <div>
-                                      <p className="text-xs font-semibold text-indigo-900 mb-1">Research Sources:</p>
-                                      <ul className="space-y-1">
-                                        {food.sources.map((source, idx) => (
-                                          <li key={idx} className="text-xs text-gray-700 flex items-start gap-1">
-                                            <ExternalLink className="w-3 h-3 mt-0.5 flex-shrink-0" />
-                                            <span>{source}</span>
-                                          </li>
-                                        ))}
-                                      </ul>
-                                    </div>
-                                  </div>
-                                )}
-                              </div>
-                            );
-                          })}
-                        </div>
+
+                    {meal.allergenIntro && (
+                      <div className="bg-orange-50 border-l-4 border-orange-300 p-3 mb-3 rounded">
+                        <p className="text-sm font-medium text-orange-800 mb-1">
+                          Allergen intro: {FOOD_DATABASE[meal.allergenIntro.food]?.name}
+                        </p>
+                        <p className="text-sm text-orange-700">{meal.allergenIntro.note}</p>
                       </div>
-                    ))}
+                    )}
+
+                    <div className="space-y-3">
+                      {meal.options.map((option, optIdx) => (
+                        <div key={optIdx} className="bg-gray-50 rounded-xl p-4">
+                          <p className="font-medium text-gray-800 mb-2">{option.description}</p>
+
+                          <div className="space-y-2">
+                            {option.foods.map(foodId => {
+                              const food = FOOD_DATABASE[foodId];
+                              return (
+                                <div key={foodId}>
+                                  <button
+                                    onClick={() => setExpandedFood(expandedFood === foodId ? null : foodId)}
+                                    className="w-full flex items-center justify-between p-3 bg-white rounded-lg border border-gray-200 min-h-[44px]"
+                                  >
+                                    <div className="flex items-center gap-2">
+                                      <Apple className="w-4 h-4 text-green-600" />
+                                      <span className="text-sm font-medium">{food.name}</span>
+                                      {food.allergens.length > 0 && (
+                                        <span className="text-sm bg-orange-100 text-orange-700 px-2 py-1 rounded">
+                                          Allergen
+                                        </span>
+                                      )}
+                                    </div>
+                                    <div className="flex items-center gap-2">
+                                      <span className="text-sm text-gray-500">{getServingSize(foodId)}</span>
+                                      {expandedFood === foodId ? <ChevronDown className="w-4 h-4" /> : <ChevronRight className="w-4 h-4" />}
+                                    </div>
+                                  </button>
+
+                                  {expandedFood === foodId && (
+                                    <div className="mt-2 p-4 bg-sky-50 rounded-lg border border-sky-100">
+                                      <div className="mb-3">
+                                        <p className="text-sm font-semibold text-sky-900 mb-1">Benefits:</p>
+                                        <ul className="list-disc list-inside space-y-1">
+                                          {food.benefits.map((benefit, idx) => (
+                                            <li key={idx} className="text-sm text-gray-700">{benefit}</li>
+                                          ))}
+                                        </ul>
+                                      </div>
+                                      <div>
+                                        <p className="text-sm font-semibold text-sky-900 mb-1">Research:</p>
+                                        <ul className="space-y-1">
+                                          {food.sources.map((source, idx) => (
+                                            <li key={idx} className="text-sm text-gray-600 flex items-start gap-1">
+                                              <ExternalLink className="w-3 h-3 mt-0.5 flex-shrink-0" />
+                                              <span>{source}</span>
+                                            </li>
+                                          ))}
+                                        </ul>
+                                      </div>
+                                    </div>
+                                  )}
+                                </div>
+                              );
+                            })}
+                          </div>
+
+                          {/* Quick-Log Button */}
+                          <button
+                            onClick={() => {
+                              const mealTypeMap = { 'Mid-morning': 'breakfast', 'Breakfast': 'breakfast', 'Lunch': 'lunch', 'Dinner': 'dinner', 'Afternoon': 'lunch', 'Snack': 'snack' };
+                              addFeedingEntry({
+                                mealType: mealTypeMap[meal.time] || 'breakfast',
+                                foods: option.foods,
+                                amount: 'As suggested',
+                                notes: '',
+                                description: option.description
+                              });
+                              if (window.showToast) window.showToast('Logged!');
+                            }}
+                            className="mt-3 w-full py-2.5 bg-green-50 text-green-700 rounded-lg text-sm font-medium border border-green-200 active:bg-green-100 min-h-[44px]"
+                          >
+                            Log This Meal
+                          </button>
+                        </div>
+                      ))}
+                    </div>
                   </div>
-                </div>
-              ))}
-            </div>
-          ))}
-        </div>
+                ))}
+              </div>
+            ))}
+          </div>
+        )}
       </div>
     );
   };
@@ -1020,45 +1420,93 @@ function BabyFeedingTracker() {
     const [selectedFoods, setSelectedFoods] = useState([]);
     const [amount, setAmount] = useState('');
     const [notes, setNotes] = useState('');
+    const [foodSearch, setFoodSearch] = useState('');
+    const [reaction, setReaction] = useState('None observed');
+    const [reactionSeverity, setReactionSeverity] = useState('');
+    const [collapsedCategories, setCollapsedCategories] = useState({});
+    const recentFoods = getRecentFoods();
+
+    const toggleFood = (id) => {
+      if (selectedFoods.includes(id)) {
+        setSelectedFoods(selectedFoods.filter(f => f !== id));
+      } else {
+        setSelectedFoods([...selectedFoods, id]);
+      }
+    };
 
     const handleSubmit = () => {
       if (selectedFoods.length === 0) return;
-      
       const description = selectedFoods.map(id => FOOD_DATABASE[id].name).join(', ');
-      
       addFeedingEntry({
         mealType,
         foods: selectedFoods,
         amount,
         notes,
-        description
+        description,
+        reaction: reaction !== 'None observed' ? reaction : undefined,
+        reactionSeverity: reaction !== 'None observed' ? reactionSeverity : undefined
       });
-      
-      // Reset form
       setSelectedFoods([]);
       setAmount('');
       setNotes('');
+      setReaction('None observed');
+      setReactionSeverity('');
+      if (window.showToast) window.showToast('Feed logged!');
       setCurrentView('dashboard');
+    };
+
+    const FoodButton = ({ id }) => {
+      const food = FOOD_DATABASE[id];
+      if (!food) return null;
+      return (
+        <button
+          onClick={() => toggleFood(id)}
+          className={`w-full text-left p-3 rounded-lg border-2 transition-all min-h-[44px] ${
+            selectedFoods.includes(id)
+              ? 'border-sky-500 bg-sky-50'
+              : 'border-gray-200 bg-white'
+          }`}
+        >
+          <div className="flex items-center justify-between">
+            <span className="text-sm font-medium text-gray-800">{food.name}</span>
+            <span className="text-sm text-gray-500">{getServingSize(id)}</span>
+          </div>
+          {food.allergens.length > 0 && (
+            <div className="mt-1">
+              <span className="text-sm bg-orange-100 text-orange-700 px-2 py-1 rounded">
+                {food.allergens.join(', ')}
+              </span>
+            </div>
+          )}
+        </button>
+      );
+    };
+
+    const matchesSearch = (id) => {
+      if (!foodSearch) return true;
+      const food = FOOD_DATABASE[id];
+      return food.name.toLowerCase().includes(foodSearch.toLowerCase()) ||
+             food.allergens.some(a => a.toLowerCase().includes(foodSearch.toLowerCase()));
     };
 
     return (
       <div className="p-4 space-y-4">
-        <div className="bg-gradient-to-r from-green-600 to-emerald-600 rounded-2xl p-6 text-white shadow-lg">
-          <h2 className="text-2xl font-bold mb-2">Log Feed</h2>
-          <p className="text-green-100">Track what your baby ate</p>
+        <div className="bg-gradient-to-r from-green-600 to-emerald-600 rounded-2xl p-5 text-white shadow-lg">
+          <h2 className="text-xl font-bold mb-1">Log Feed</h2>
+          <p className="text-green-100">{babyName}'s meals today</p>
         </div>
 
         {/* Meal Type */}
         <div className="bg-white rounded-2xl p-5 shadow-lg">
           <label className="block text-sm font-semibold text-gray-700 mb-3">Meal Type</label>
-          <div className="grid grid-cols-3 gap-2">
+          <div className="grid grid-cols-2 gap-2">
             {['breakfast', 'lunch', 'dinner', 'snack'].map(type => (
               <button
                 key={type}
                 onClick={() => setMealType(type)}
-                className={`py-3 rounded-xl font-medium capitalize transition-colors ${
+                className={`py-3 rounded-xl font-medium capitalize transition-colors min-h-[44px] ${
                   mealType === type
-                    ? 'bg-indigo-600 text-white'
+                    ? 'bg-sky-500 text-white'
                     : 'bg-gray-100 text-gray-700'
                 }`}
               >
@@ -1070,37 +1518,52 @@ function BabyFeedingTracker() {
 
         {/* Food Selection */}
         <div className="bg-white rounded-2xl p-5 shadow-lg">
-          <label className="block text-sm font-semibold text-gray-700 mb-3">Foods Consumed</label>
-          <div className="space-y-2 max-h-96 overflow-y-auto">
-            {Object.entries(FOOD_DATABASE).map(([id, food]) => (
-              <button
-                key={id}
-                onClick={() => {
-                  if (selectedFoods.includes(id)) {
-                    setSelectedFoods(selectedFoods.filter(f => f !== id));
-                  } else {
-                    setSelectedFoods([...selectedFoods, id]);
-                  }
-                }}
-                className={`w-full text-left p-3 rounded-lg border-2 transition-all ${
-                  selectedFoods.includes(id)
-                    ? 'border-indigo-600 bg-indigo-50'
-                    : 'border-gray-200 bg-white'
-                }`}
-              >
-                <div className="flex items-center justify-between">
-                  <span className="font-medium text-gray-800">{food.name}</span>
-                  <span className="text-xs text-gray-600">{getServingSize(id)}</span>
+          <label className="block text-sm font-semibold text-gray-700 mb-3">
+            Foods ({selectedFoods.length} selected)
+          </label>
+
+          {/* Search */}
+          <input
+            type="text"
+            value={foodSearch}
+            onChange={(e) => setFoodSearch(e.target.value)}
+            placeholder="Search foods..."
+            className="w-full p-3 mb-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-sky-500 focus:border-transparent"
+          />
+
+          <div className="max-h-96 overflow-y-auto space-y-4">
+            {/* Recent Foods */}
+            {recentFoods.length > 0 && !foodSearch && (
+              <div>
+                <h4 className="text-sm font-semibold text-gray-500 mb-2">Recent</h4>
+                <div className="space-y-2">
+                  {recentFoods.map(id => <FoodButton key={id} id={id} />)}
                 </div>
-                {food.allergens.length > 0 && (
-                  <div className="mt-1">
-                    <span className="text-xs bg-orange-100 text-orange-700 px-2 py-1 rounded">
-                      {food.allergens.join(', ')}
-                    </span>
-                  </div>
-                )}
-              </button>
-            ))}
+              </div>
+            )}
+
+            {/* Categorized Foods */}
+            {Object.entries(FOOD_CATEGORIES).map(([category, foodIds]) => {
+              const filtered = foodIds.filter(matchesSearch);
+              if (filtered.length === 0) return null;
+              const isCollapsed = collapsedCategories[category];
+              return (
+                <div key={category}>
+                  <button
+                    onClick={() => setCollapsedCategories({ ...collapsedCategories, [category]: !isCollapsed })}
+                    className="flex items-center justify-between w-full text-left mb-2 min-h-[36px]"
+                  >
+                    <h4 className="text-sm font-semibold text-gray-500">{category}</h4>
+                    {isCollapsed ? <ChevronRight className="w-4 h-4 text-gray-400" /> : <ChevronDown className="w-4 h-4 text-gray-400" />}
+                  </button>
+                  {!isCollapsed && (
+                    <div className="space-y-2">
+                      {filtered.map(id => <FoodButton key={id} id={id} />)}
+                    </div>
+                  )}
+                </div>
+              );
+            })}
           </div>
         </div>
 
@@ -1112,20 +1575,79 @@ function BabyFeedingTracker() {
               type="text"
               value={amount}
               onChange={(e) => setAmount(e.target.value)}
-              placeholder="e.g., 2 tbsp, most of the serving, ½ bowl"
-              className="w-full p-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+              placeholder="e.g., 2 tbsp, most of the serving, half a bowl"
+              className="w-full p-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-sky-500 focus:border-transparent"
             />
           </div>
-          
+
           <div>
-            <label className="block text-sm font-semibold text-gray-700 mb-2">Notes (Optional)</label>
+            <label className="block text-sm font-semibold text-gray-700 mb-2">Quick Notes</label>
+            <div className="flex flex-wrap gap-2 mb-2">
+              {QUICK_NOTES.map(note => (
+                <button
+                  key={note}
+                  onClick={() => setNotes(notes ? notes + '. ' + note : note)}
+                  className="px-3 py-2 bg-gray-100 text-gray-700 rounded-lg text-sm font-medium active:bg-gray-200 min-h-[40px]"
+                >
+                  {note}
+                </button>
+              ))}
+            </div>
             <textarea
               value={notes}
               onChange={(e) => setNotes(e.target.value)}
-              placeholder="Any observations, reactions, preferences..."
-              rows={3}
-              className="w-full p-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+              placeholder="Additional observations..."
+              rows={2}
+              className="w-full p-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-sky-500 focus:border-transparent"
             />
+          </div>
+
+          {/* Reaction Tracker */}
+          <div>
+            <label className="block text-sm font-semibold text-gray-700 mb-2">Any reactions? (Optional)</label>
+            <div className="flex flex-wrap gap-2">
+              {REACTION_OPTIONS.map(opt => (
+                <button
+                  key={opt}
+                  onClick={() => setReaction(reaction === opt ? 'None observed' : opt)}
+                  className={`px-3 py-2 rounded-lg text-sm font-medium min-h-[40px] ${
+                    reaction === opt
+                      ? opt === 'None observed' ? 'bg-green-100 text-green-700 border border-green-300' : 'bg-orange-100 text-orange-700 border border-orange-300'
+                      : 'bg-gray-100 text-gray-600'
+                  }`}
+                >
+                  {opt}
+                </button>
+              ))}
+            </div>
+
+            {reaction !== 'None observed' && (
+              <div className="mt-3">
+                <label className="block text-sm font-medium text-gray-600 mb-2">Severity</label>
+                <div className="flex gap-2">
+                  {REACTION_SEVERITY.map(sev => (
+                    <button
+                      key={sev}
+                      onClick={() => setReactionSeverity(sev)}
+                      className={`flex-1 py-2 rounded-lg text-sm font-medium min-h-[40px] ${
+                        reactionSeverity === sev
+                          ? sev === 'Severe' ? 'bg-red-100 text-red-700 border border-red-300' : 'bg-orange-100 text-orange-700 border border-orange-300'
+                          : 'bg-gray-100 text-gray-600'
+                      }`}
+                    >
+                      {sev}
+                    </button>
+                  ))}
+                </div>
+                {(reaction === 'Swelling' || reactionSeverity === 'Severe') && (
+                  <div className="mt-3 bg-red-50 border-l-4 border-red-400 p-3 rounded">
+                    <p className="text-sm font-semibold text-red-800">
+                      If your baby has difficulty breathing or severe swelling, call emergency services immediately.
+                    </p>
+                  </div>
+                )}
+              </div>
+            )}
           </div>
         </div>
 
@@ -1133,9 +1655,9 @@ function BabyFeedingTracker() {
         <button
           onClick={handleSubmit}
           disabled={selectedFoods.length === 0}
-          className="w-full bg-green-600 text-white rounded-xl py-4 font-semibold shadow-lg hover:bg-green-700 transition-colors disabled:bg-gray-300 disabled:cursor-not-allowed"
+          className="w-full bg-green-600 text-white rounded-xl py-4 font-semibold shadow-lg hover:bg-green-700 transition-colors disabled:bg-gray-300 disabled:cursor-not-allowed min-h-[52px]"
         >
-          Save Feed Entry
+          {selectedFoods.length === 0 ? 'Pick at least one food to save' : 'Save Feed Entry'}
         </button>
       </div>
     );
@@ -1143,6 +1665,9 @@ function BabyFeedingTracker() {
 
   // Progress/Analytics View
   const ProgressView = () => {
+    const [newWeight, setNewWeight] = useState('');
+    const [newHeight, setNewHeight] = useState('');
+
     const weightData = babyProfile.weight.map(w => ({
       date: new Date(w.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
       weight: w.value
@@ -1153,22 +1678,49 @@ function BabyFeedingTracker() {
       height: h.value
     }));
 
-    // Allergen exposure over time
     const allergenData = Object.entries(getAllergenStats()).map(([allergen, count]) => ({
       allergen: allergen.charAt(0).toUpperCase() + allergen.slice(1),
       exposures: count,
       target: 3
     }));
 
+    const saveWeight = () => {
+      const val = parseFloat(newWeight);
+      if (isNaN(val) || val < 2 || val > 20) {
+        alert('Please enter a weight between 2 and 20 kg');
+        return;
+      }
+      setBabyProfile({
+        ...babyProfile,
+        weight: [...babyProfile.weight, { date: new Date().toISOString(), value: val }]
+      });
+      setNewWeight('');
+      if (window.showToast) window.showToast('Weight saved');
+    };
+
+    const saveHeight = () => {
+      const val = parseFloat(newHeight);
+      if (isNaN(val) || val < 40 || val > 100) {
+        alert('Please enter a height between 40 and 100 cm');
+        return;
+      }
+      setBabyProfile({
+        ...babyProfile,
+        height: [...babyProfile.height, { date: new Date().toISOString(), value: val }]
+      });
+      setNewHeight('');
+      if (window.showToast) window.showToast('Height saved');
+    };
+
     return (
-      <div className="p-4 space-y-6">
-        <div className="bg-gradient-to-r from-purple-600 to-pink-600 rounded-2xl p-6 text-white shadow-lg">
-          <h2 className="text-2xl font-bold mb-2">Growth & Progress</h2>
-          <p className="text-purple-100">Track your baby's development</p>
+      <div className="p-4 space-y-5">
+        <div className="bg-gradient-to-r from-sky-500 to-sky-400 rounded-2xl p-5 text-white shadow-lg">
+          <h2 className="text-xl font-bold mb-1">{babyName}'s Growth</h2>
+          <p className="text-sky-100">Track development over time</p>
         </div>
 
         {/* Weight Chart */}
-        {weightData.length > 0 && (
+        {weightData.length > 0 ? (
           <div className="bg-white rounded-2xl p-5 shadow-lg">
             <h3 className="text-lg font-bold text-gray-800 mb-4">Weight Trend</h3>
             <ResponsiveContainer width="100%" height={200}>
@@ -1177,14 +1729,19 @@ function BabyFeedingTracker() {
                 <XAxis dataKey="date" style={{ fontSize: '12px' }} />
                 <YAxis style={{ fontSize: '12px' }} />
                 <Tooltip />
-                <Line type="monotone" dataKey="weight" stroke="#6366f1" strokeWidth={3} />
+                <Line type="monotone" dataKey="weight" stroke="#0ea5e9" strokeWidth={3} />
               </LineChart>
             </ResponsiveContainer>
+          </div>
+        ) : (
+          <div className="bg-sky-50 rounded-2xl p-5 text-center">
+            <Scale className="w-8 h-8 text-sky-400 mx-auto mb-2" />
+            <p className="text-sm text-gray-500">Add your first weight measurement below to start tracking {babyName}'s growth</p>
           </div>
         )}
 
         {/* Height Chart */}
-        {heightData.length > 0 && (
+        {heightData.length > 0 ? (
           <div className="bg-white rounded-2xl p-5 shadow-lg">
             <h3 className="text-lg font-bold text-gray-800 mb-4">Height Trend</h3>
             <ResponsiveContainer width="100%" height={200}>
@@ -1196,6 +1753,11 @@ function BabyFeedingTracker() {
                 <Line type="monotone" dataKey="height" stroke="#10b981" strokeWidth={3} />
               </LineChart>
             </ResponsiveContainer>
+          </div>
+        ) : (
+          <div className="bg-green-50 rounded-2xl p-5 text-center">
+            <Ruler className="w-8 h-8 text-green-400 mx-auto mb-2" />
+            <p className="text-sm text-gray-500">Add your first height measurement below</p>
           </div>
         )}
 
@@ -1209,52 +1771,56 @@ function BabyFeedingTracker() {
               <YAxis style={{ fontSize: '12px' }} />
               <Tooltip />
               <Legend />
-              <Bar dataKey="exposures" fill="#6366f1" name="Actual" />
+              <Bar dataKey="exposures" fill="#0ea5e9" name="Actual" />
               <Bar dataKey="target" fill="#22c55e" name="Target (3x)" />
             </BarChart>
           </ResponsiveContainer>
         </div>
 
-        {/* Add Measurements */}
+        {/* Add Measurements - Controlled inputs with Save buttons */}
         <div className="bg-white rounded-2xl p-5 shadow-lg space-y-4">
           <h3 className="text-lg font-bold text-gray-800">Add Measurements</h3>
-          
+
           <div>
             <label className="block text-sm font-semibold text-gray-700 mb-2">Weight (kg)</label>
-            <input
-              type="number"
-              step="0.1"
-              placeholder="e.g., 7.5"
-              className="w-full p-3 border border-gray-300 rounded-xl"
-              onBlur={(e) => {
-                if (e.target.value) {
-                  setBabyProfile({
-                    ...babyProfile,
-                    weight: [...babyProfile.weight, { date: new Date().toISOString(), value: parseFloat(e.target.value) }]
-                  });
-                  e.target.value = '';
-                }
-              }}
-            />
+            <div className="flex gap-2">
+              <input
+                type="number"
+                step="0.1"
+                value={newWeight}
+                onChange={(e) => setNewWeight(e.target.value)}
+                placeholder="e.g., 7.5"
+                className="flex-1 p-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-sky-500 focus:border-transparent"
+              />
+              <button
+                onClick={saveWeight}
+                disabled={!newWeight}
+                className="px-5 py-3 bg-sky-500 text-white rounded-xl font-medium disabled:bg-gray-300 min-h-[44px]"
+              >
+                Save
+              </button>
+            </div>
           </div>
-          
+
           <div>
             <label className="block text-sm font-semibold text-gray-700 mb-2">Height (cm)</label>
-            <input
-              type="number"
-              step="0.1"
-              placeholder="e.g., 67.5"
-              className="w-full p-3 border border-gray-300 rounded-xl"
-              onBlur={(e) => {
-                if (e.target.value) {
-                  setBabyProfile({
-                    ...babyProfile,
-                    height: [...babyProfile.height, { date: new Date().toISOString(), value: parseFloat(e.target.value) }]
-                  });
-                  e.target.value = '';
-                }
-              }}
-            />
+            <div className="flex gap-2">
+              <input
+                type="number"
+                step="0.1"
+                value={newHeight}
+                onChange={(e) => setNewHeight(e.target.value)}
+                placeholder="e.g., 67.5"
+                className="flex-1 p-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-sky-500 focus:border-transparent"
+              />
+              <button
+                onClick={saveHeight}
+                disabled={!newHeight}
+                className="px-5 py-3 bg-sky-500 text-white rounded-xl font-medium disabled:bg-gray-300 min-h-[44px]"
+              >
+                Save
+              </button>
+            </div>
           </div>
         </div>
       </div>
@@ -1263,13 +1829,45 @@ function BabyFeedingTracker() {
 
   // Profile Settings View
   const ProfileView = () => {
+    const ageMonths = getAgeInMonths();
+    const latestWeight = babyProfile.weight[babyProfile.weight.length - 1];
+    const latestHeight = babyProfile.height[babyProfile.height.length - 1];
+    const fileInputRef = React.useRef(null);
+
     return (
       <div className="p-4 space-y-4">
-        <div className="bg-gradient-to-r from-blue-600 to-cyan-600 rounded-2xl p-6 text-white shadow-lg">
-          <h2 className="text-2xl font-bold mb-2">Baby Profile</h2>
-          <p className="text-blue-100">Manage your baby's information</p>
+        <div className="bg-gradient-to-r from-sky-500 to-sky-400 rounded-2xl p-5 text-white shadow-lg">
+          <h2 className="text-xl font-bold mb-1">{babyName}'s Profile</h2>
+          <p className="text-sky-100">{ageMonths > 0 ? ageMonths + ' months old' : 'Set birth date below'}</p>
         </div>
 
+        {/* Baby Info Card */}
+        {(latestWeight || latestHeight) && (
+          <div className="bg-gradient-to-br from-sky-50 to-blue-50 rounded-2xl p-5 shadow">
+            <div className="flex items-center gap-3 mb-3">
+              <Baby className="w-7 h-7 text-sky-500" />
+              <span className="text-lg font-bold text-gray-800">{babyName}</span>
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <div className="bg-white rounded-xl p-3">
+                <div className="flex items-center gap-2 mb-1">
+                  <Scale className="w-4 h-4 text-sky-500" />
+                  <span className="text-sm text-gray-500">Weight</span>
+                </div>
+                <p className="text-xl font-bold text-gray-800">{latestWeight ? latestWeight.value + ' kg' : '-'}</p>
+              </div>
+              <div className="bg-white rounded-xl p-3">
+                <div className="flex items-center gap-2 mb-1">
+                  <Ruler className="w-4 h-4 text-sky-500" />
+                  <span className="text-sm text-gray-500">Height</span>
+                </div>
+                <p className="text-xl font-bold text-gray-800">{latestHeight ? latestHeight.value + ' cm' : '-'}</p>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Profile Settings */}
         <div className="bg-white rounded-2xl p-5 shadow-lg space-y-4">
           <div>
             <label className="block text-sm font-semibold text-gray-700 mb-2">Baby's Name</label>
@@ -1278,29 +1876,74 @@ function BabyFeedingTracker() {
               value={babyProfile.name}
               onChange={(e) => setBabyProfile({ ...babyProfile, name: e.target.value })}
               placeholder="Enter name"
-              className="w-full p-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-indigo-500"
+              className="w-full p-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-sky-500 focus:border-transparent"
             />
           </div>
-          
+
           <div>
             <label className="block text-sm font-semibold text-gray-700 mb-2">Birth Date</label>
             <input
               type="date"
               value={babyProfile.birthDate}
               onChange={(e) => setBabyProfile({ ...babyProfile, birthDate: e.target.value })}
-              className="w-full p-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-indigo-500"
+              className="w-full p-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-sky-500 focus:border-transparent"
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm font-semibold text-gray-700 mb-2">Solids Start Date</label>
+            <p className="text-sm text-gray-500 mb-2">When did {babyName} start eating solids? This powers "Today's Meals" on the dashboard.</p>
+            <input
+              type="date"
+              value={babyProfile.solidStartDate || ''}
+              onChange={(e) => setBabyProfile({ ...babyProfile, solidStartDate: e.target.value })}
+              className="w-full p-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-sky-500 focus:border-transparent"
             />
           </div>
         </div>
 
-        {/* Info Cards */}
-        <div className="bg-blue-50 rounded-2xl p-5 border-l-4 border-blue-600">
-          <h3 className="font-bold text-blue-900 mb-2 flex items-center gap-2">
+        {/* Data Backup */}
+        <div className="bg-white rounded-2xl p-5 shadow-lg space-y-3">
+          <h3 className="font-bold text-gray-800 flex items-center gap-2">
+            <Info className="w-5 h-5 text-sky-500" />
+            Data Backup
+          </h3>
+          <p className="text-sm text-gray-500">Export your data to keep a backup, or import from a previous backup.</p>
+          <div className="flex gap-3">
+            <button
+              onClick={exportData}
+              className="flex-1 py-3 bg-sky-50 text-sky-700 rounded-xl font-medium border border-sky-200 min-h-[44px]"
+            >
+              Export Backup
+            </button>
+            <button
+              onClick={() => fileInputRef.current?.click()}
+              className="flex-1 py-3 bg-gray-50 text-gray-700 rounded-xl font-medium border border-gray-200 min-h-[44px]"
+            >
+              Import Backup
+            </button>
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept=".json"
+              style={{ display: 'none' }}
+              onChange={(e) => {
+                if (e.target.files[0]) importData(e.target.files[0]);
+                e.target.value = '';
+              }}
+            />
+          </div>
+        </div>
+
+        {/* About */}
+        <div className="bg-sky-50 rounded-2xl p-5 border-l-4 border-sky-400">
+          <h3 className="font-bold text-sky-900 mb-2 flex items-center gap-2">
             <Info className="w-5 h-5" />
             About This App
           </h3>
-          <p className="text-sm text-blue-800">
-            This app is based on evidence from Israeli LEAP study, WHO 2023 guidelines, Scandinavian research, and New Zealand BLISS study. All recommendations prioritize early allergen introduction, daily iron-rich animal foods, and healthy fats for brain development.
+          <p className="text-sm text-sky-800">
+            Built with evidence from the Israeli LEAP study, WHO 2023 guidelines, Scandinavian research, and NZ BLISS study.
+            Focused on early allergen introduction, daily iron-rich foods, and healthy fats for brain development.
           </p>
         </div>
       </div>
@@ -1310,7 +1953,7 @@ function BabyFeedingTracker() {
   // Bottom Navigation
   const BottomNav = () => {
     const navItems = [
-      { id: 'dashboard', icon: TrendingUp, label: 'Dashboard' },
+      { id: 'dashboard', icon: TrendingUp, label: 'Home' },
       { id: 'meals', icon: Apple, label: 'Meals' },
       { id: 'log', icon: Plus, label: 'Log' },
       { id: 'progress', icon: Calendar, label: 'Progress' },
@@ -1318,20 +1961,20 @@ function BabyFeedingTracker() {
     ];
 
     return (
-      <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 shadow-lg">
+      <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 shadow-lg safe-bottom">
         <div className="flex justify-around items-center h-16">
           {navItems.map(item => (
             <button
               key={item.id}
               onClick={() => setCurrentView(item.id)}
-              className={`flex flex-col items-center justify-center flex-1 h-full transition-colors ${
+              className={`flex flex-col items-center justify-center flex-1 h-full transition-colors min-h-[48px] ${
                 currentView === item.id
-                  ? 'text-indigo-600'
-                  : 'text-gray-500'
+                  ? 'text-sky-500'
+                  : 'text-gray-400'
               }`}
             >
               <item.icon className="w-6 h-6" />
-              <span className="text-xs mt-1">{item.label}</span>
+              <span className="text-sm mt-1">{item.label}</span>
             </button>
           ))}
         </div>
@@ -1340,11 +1983,11 @@ function BabyFeedingTracker() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 pb-20">
+    <div className="min-h-screen bg-gray-50 pb-24">
       {/* Header */}
-      <div className="bg-gradient-to-r from-indigo-600 to-purple-600 text-white p-4 shadow-lg">
-        <h1 className="text-2xl font-bold">Baby Feeding Tracker</h1>
-        <p className="text-indigo-100 text-sm">Evidence-based nutrition for your baby</p>
+      <div className="bg-gradient-to-r from-sky-500 to-sky-400 text-white p-4 shadow-lg safe-top">
+        <h1 className="text-xl font-bold">{babyName}'s Feeding Tracker</h1>
+        <p className="text-sky-100 text-sm">{babyName === 'Baby' ? 'Evidence-based feeding journey' : babyName + "'s feeding journey"}</p>
       </div>
 
       {/* Main Content */}
@@ -1362,6 +2005,10 @@ function BabyFeedingTracker() {
   );
 }
 
-// Mount the app
+// Mount the app with Error Boundary
 const root = ReactDOM.createRoot(document.getElementById('root'));
-root.render(<BabyFeedingTracker />);
+root.render(
+  <ErrorBoundary>
+    <BabyFeedingTracker />
+  </ErrorBoundary>
+);
