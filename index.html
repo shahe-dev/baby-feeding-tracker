@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="Baby Feeding">
+  <meta name="theme-color" content="#6366f1">
+  
+  <title>Baby Feeding Tracker - Evidence-Based Nutrition</title>
+  
+  <!-- Favicon -->
+  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>👶</text></svg>">
+  
+  <!-- Apple Touch Icons -->
+  <link rel="apple-touch-icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 180 180'><rect width='180' height='180' fill='%236366f1'/><text x='50%' y='50%' dominant-baseline='middle' text-anchor='middle' font-size='100'>👶</text></svg>">
+  
+  <!-- Manifest -->
+  <link rel="manifest" href="manifest.json">
+  
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  
+  <style>
+    * {
+      -webkit-tap-highlight-color: transparent;
+    }
+    
+    body {
+      overscroll-behavior-y: none;
+      -webkit-font-smoothing: antialiased;
+    }
+    
+    /* iOS Safe Area Insets */
+    .safe-top {
+      padding-top: env(safe-area-inset-top);
+    }
+    
+    .safe-bottom {
+      padding-bottom: env(safe-area-inset-bottom);
+    }
+    
+    /* Loading animation */
+    .spinner {
+      border: 3px solid #f3f4f6;
+      border-top: 3px solid #6366f1;
+      border-radius: 50%;
+      width: 40px;
+      height: 40px;
+      animation: spin 1s linear infinite;
+    }
+    
+    @keyframes spin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+
+    /* Smooth scrolling */
+    html {
+      scroll-behavior: smooth;
+    }
+
+    /* Hide scrollbar but keep functionality */
+    ::-webkit-scrollbar {
+      width: 0px;
+      background: transparent;
+    }
+  </style>
+</head>
+<body>
+  <div id="root">
+    <div style="display: flex; justify-content: center; align-items: center; height: 100vh; background: linear-gradient(to bottom right, #6366f1, #a855f7);">
+      <div style="text-align: center; color: white;">
+        <div class="spinner" style="margin: 0 auto 20px;"></div>
+        <p style="font-size: 18px; font-weight: bold;">Loading Baby Feeding Tracker...</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- React and Dependencies -->
+  <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+  <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+  <script src="https://unpkg.com/recharts@2.5.0/dist/Recharts.js"></script>
+  <script src="https://unpkg.com/lucide-react@0.263.1"></script>
+
+  <!-- Babel Standalone for JSX -->
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+
+  <!-- Your App Component -->
+  <script type="text/babel" src="baby-feeding-app.jsx"></script>
+
+  <!-- Service Worker Registration -->
+  <script>
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', () => {
+        navigator.serviceWorker.register('./service-worker.js')
+          .then(registration => {
+            console.log('Service Worker registered successfully:', registration.scope);
+          })
+          .catch(error => {
+            console.log('Service Worker registration failed:', error);
+          });
+      });
+    }
+
+    // Prevent iOS bounce scroll
+    document.addEventListener('touchmove', function(e) {
+      if (e.target.closest('.overflow-y-auto')) return;
+      e.preventDefault();
+    }, { passive: false });
+
+    // Add to Home Screen prompt for iOS
+    let deferredPrompt;
+    window.addEventListener('beforeinstallprompt', (e) => {
+      e.preventDefault();
+      deferredPrompt = e;
+    });
+
+    // Detect if running as installed PWA
+    const isStandalone = window.matchMedia('(display-mode: standalone)').matches || 
+                        window.navigator.standalone === true;
+    
+    if (isStandalone) {
+      console.log('Running as installed PWA');
+    } else {
+      console.log('Running in browser - Install instructions available');
+    }
+  </script>
+
+  <!-- Installation Instructions Modal (shows on first visit) -->
+  <script>
+    // Show installation guide if not installed and first visit
+    const hasSeenGuide = localStorage.getItem('hasSeenInstallGuide');
+    const isInstalled = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone;
+    
+    if (!hasSeenGuide && !isInstalled) {
+      setTimeout(() => {
+        const iOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
+        
+        if (iOS) {
+          const showGuide = confirm(
+            "📱 Install this app on your iPhone!\n\n" +
+            "1. Tap the Share button (⬆️) at the bottom\n" +
+            "2. Scroll and tap 'Add to Home Screen'\n" +
+            "3. Tap 'Add' in the top right\n\n" +
+            "The app will work offline and look like a native app!"
+          );
+          
+          if (showGuide) {
+            localStorage.setItem('hasSeenInstallGuide', 'true');
+          }
+        }
+      }, 2000);
+    }
+  </script>
+</body>
+</html>
