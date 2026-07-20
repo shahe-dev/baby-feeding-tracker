@@ -1,0 +1,31 @@
+# Dependencies / build
+node_modules/
+dist/
+build/
+.next/
+venv/
+.venv/
+__pycache__/
+
+# Environment / secrets
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+
+# Local tool config
+.claude/settings.local.json
+
+# Logs
+*.log
+
+# Data
+data/
+exports/
+output/
+
+# OS junk
+.DS_Store
+Thumbs.db
+desktop.ini
