@@ -1,290 +1,42 @@
-# Quick Deployment Guide - Baby Feeding Tracker PWA
+# Deployment
 
-## Files You Need
+## Build and check
 
-You have 5 files that make up the complete app:
+Use Node.js 22 or later:
 
-1. **index.html** - Main entry point
-2. **baby-feeding-app.jsx** - React application (all features)
-3. **service-worker.js** - Offline functionality
-4. **manifest.json** - PWA configuration
-5. **README.md** - Full documentation
-
-## Option 1: Deploy to GitHub Pages (Free & Easy)
-
-### Step 1: Create GitHub Repository
-
-1. Go to https://github.com/new
-2. Name it: `baby-feeding-tracker`
-3. Make it **Public** (required for free GitHub Pages)
-4. Click "Create repository"
-
-### Step 2: Upload Files
-
-1. Click "uploading an existing file"
-2. Drag and drop ALL 5 files
-3. Click "Commit changes"
-
-### Step 3: Enable GitHub Pages
-
-1. Go to repository **Settings**
-2. Click **Pages** in left sidebar
-3. Under "Source", select **main** branch
-4. Click **Save**
-5. Wait 2-3 minutes
-
-### Step 4: Access Your App
-
-Your app will be live at:
-```
-https://[your-username].github.io/baby-feeding-tracker/
+```sh
+npm ci
+npm test
+npm run build
 ```
 
-Replace `[your-username]` with your GitHub username.
+Commit source, package lock, generated `index.html`, `service-worker.js`, `assets/` and `icons/` together. Do not edit generated bundles directly. CI rebuilds and fails when the committed files are out of date.
 
-### Step 5: Install on Wife's iPhone
+## Existing GitHub Pages site
 
-1. Open **Safari** on iPhone 14 Pro
-2. Go to your GitHub Pages URL
-3. Tap **Share** button (⬆️)
-4. Scroll and tap **"Add to Home Screen"**
-5. Tap **"Add"**
-6. App installed! Works offline now.
+The build writes static files to the repository root, so an existing Pages configuration serving the root of `master` can stay as it is. A pull request does not change that deployed branch. Publish by merging the reviewed changes into the branch configured in Pages.
 
----
+All asset paths, the manifest scope and service-worker registration are relative, supporting a project path such as `/baby-feeding-tracker/`. Serve the complete build atomically through an HTTPS static host. No application server or runtime CDN dependencies are required.
 
-## Option 2: Deploy to Netlify (Free & Fastest)
+## Offline and updates
 
-### Step 1: Create Account
+Open the app online once and let installation complete before relying on offline use. The worker precaches the matching HTML, compiled JavaScript, CSS, manifest and icons. Installation fails if a required file is unavailable or belongs to a different build; the previous worker remains available.
 
-1. Go to https://netlify.com
-2. Sign up (free account)
+Updates wait for the Update button or for all old tabs to close. Save any draft first. The refresh follows activation of the new worker. Only caches belonging to this app are cleaned up; personal records live separately in localStorage.
 
-### Step 2: Deploy
+Before release, verify on the intended iPhone:
 
-1. Click **"Add new site"** → **"Deploy manually"**
-2. Drag and drop ALL 5 files into the upload zone
-3. Wait 30 seconds
-4. Your site is live!
+1. Export a backup from the existing app.
+2. Open the new build on the same origin and verify profile, history, amounts and growth records.
+3. Confirm a backdated meal, edit it and reload to verify persistence.
+4. Install to Home Screen, close and reopen, then test the app in airplane mode.
+5. Test an update while the app is open; saved records should persist and the update should wait for the user's action.
+6. Check VoiceOver labels, larger text, keyboard visibility and safe-area spacing.
 
-### Step 3: Get URL
+Automated tests exercise date calculations, imports, React forms and service-worker failure behavior. They do not replace a real iOS installation and offline test.
 
-Netlify gives you a URL like:
-```
-https://random-name-123.netlify.app
-```
+## Data recovery
 
-You can customize this in **Site settings** → **Change site name**
+Export before clearing Safari website data, changing the deployment origin, or reinstalling. Those actions may make local records unavailable. Never promise that reinstalling preserves records.
 
-### Step 4: Install on iPhone
-
-Same as GitHub Pages option above.
-
----
-
-## Option 3: Deploy to Vercel (Free & Professional)
-
-### Step 1: Create Account
-
-1. Go to https://vercel.com
-2. Sign up with GitHub (easiest)
-
-### Step 2: Deploy
-
-1. Click **"Add New"** → **"Project"**
-2. Select your GitHub repo
-3. Click **"Deploy"**
-4. Done!
-
-Or drag-and-drop:
-1. Click **"Add New"** → **"Project"**
-2. Drag ALL 5 files
-3. Click **"Deploy"**
-
-### Step 3: Access
-
-Your URL:
-```
-https://baby-feeding-tracker.vercel.app
-```
-
----
-
-## Option 4: Local Testing (Before Deployment)
-
-### If you want to test first:
-
-1. Install Python (most Macs have it):
-```bash
-python3 --version
-```
-
-2. Navigate to folder with the files:
-```bash
-cd /path/to/folder/with/files
-```
-
-3. Start local server:
-```bash
-python3 -m http.server 8000
-```
-
-4. Open on iPhone:
-   - Find your Mac's IP address (System Settings → Network)
-   - On iPhone Safari: `http://[Mac-IP]:8000`
-   - Example: `http://192.168.1.10:8000`
-
-5. Test and then deploy using options above
-
----
-
-## Recommended: GitHub Pages
-
-**Why?**
-- ✅ Free forever
-- ✅ Easy to update (just upload new files)
-- ✅ No account complexity
-- ✅ Good for personal use
-- ✅ Automatic HTTPS
-- ✅ Custom domain support (optional)
-
-**Updating the App:**
-1. Go to your GitHub repository
-2. Click on file to update
-3. Click pencil icon (Edit)
-4. Make changes
-5. Click "Commit changes"
-6. Wait 1-2 minutes for changes to go live
-
----
-
-## Sharing with Your Wife
-
-### Option A: Direct URL
-
-Send her the URL in WhatsApp/iMessage:
-```
-https://[your-username].github.io/baby-feeding-tracker/
-```
-
-She opens in Safari → Add to Home Screen
-
-### Option B: QR Code
-
-1. Go to https://qr-code-generator.com
-2. Enter your GitHub Pages URL
-3. Download QR code
-4. She scans with iPhone camera
-5. Opens in Safari → Add to Home Screen
-
----
-
-## Important Notes
-
-### ⚠️ Must Use Safari
-
-- The app **MUST** be opened in Safari first
-- Chrome/Firefox on iOS won't allow "Add to Home Screen" for PWAs
-- After installation, it's a standalone app
-
-### ✅ Offline Works Automatically
-
-- After first load, everything works offline
-- No internet needed for daily use
-- Data stored on her iPhone only
-- Private and secure
-
-### 📱 Looks Like Native App
-
-- No browser UI
-- Full screen
-- App icon on home screen
-- Behaves like App Store app
-
-### 🔄 Updates
-
-When you update files on GitHub:
-- She needs to **refresh the page** in the installed app
-- Or **reinstall** from Safari
-- Data persists (won't lose anything)
-
----
-
-## Testing Checklist
-
-Before giving to your wife, test:
-
-- ✅ Can add baby profile (name, birth date)
-- ✅ Can add weight and height measurements
-- ✅ Can view meal plans for weeks 1-2
-- ✅ Can expand food items to see benefits and research
-- ✅ Can log a feed
-- ✅ Can see feed in "Recent Feeds" on dashboard
-- ✅ Allergen tracker updates when logging feeds
-- ✅ Charts appear in Progress tab (after 2+ data points)
-- ✅ Works offline (turn off WiFi and cellular, app still works)
-- ✅ App opens from home screen icon
-
----
-
-## Quick Start After Installation
-
-1. **Profile Setup** (1 minute)
-   - Tap Profile tab
-   - Enter baby name and birth date
-   - Save
-
-2. **First Measurements** (1 minute)
-   - Tap Progress tab
-   - Add current weight and height
-   - Save
-
-3. **Start Week 1** (ongoing)
-   - Tap Meals tab
-   - Follow Day 1 plan
-   - After feeding, tap Log tab
-   - Select foods given
-   - Save entry
-
-4. **Check Dashboard** (daily)
-   - View recent feeds
-   - Monitor allergen exposure
-   - Track progress
-
----
-
-## Support
-
-If your wife has questions:
-- Open the **README.md** file (full documentation)
-- Tap any food in Meals view to see research sources
-- Dashboard shows real-time allergen tracking
-- Progress tab visualizes growth trends
-
----
-
-## Privacy & Data
-
-- **All data stays on her iPhone**
-- Nothing sent to any server
-- Completely private
-- No tracking or analytics
-- Offline-first design
-
----
-
-## Next Steps
-
-1. **Choose deployment option** (recommend GitHub Pages)
-2. **Upload 5 files**
-3. **Get URL**
-4. **Test on your phone first**
-5. **Send URL to your wife**
-6. **Walk her through installation**
-7. **She's ready to start tracking!**
-
-The whole process takes about 10 minutes from start to finish.
-
----
-
-**Any issues? Check the README.md for detailed troubleshooting!**
+If the app reports a save failure, keep it open and export available records before troubleshooting. If loading fails, use the recovery export and restore a known-good normal backup. The raw recovery file preserves exact storage values for repair and cannot be imported directly as a normal backup.
