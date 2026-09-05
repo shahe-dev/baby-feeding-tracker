@@ -29,3 +29,6 @@ output/
 .DS_Store
 Thumbs.db
 desktop.ini
+
+# Temporary integration-test output
+.test-output/
