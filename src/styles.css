@@ -1613,6 +1613,28 @@ main:focus {
 }
 
 /* Keep small-screen supporting text readable without disabling user zoom. */
+.meal-components {
+  display: grid;
+  gap: 10px;
+  margin: 16px 0;
+  padding: 14px;
+  border-radius: 12px;
+  background: #f1f7f5;
+}
+.meal-components > div { min-width: 0; }
+.meal-components dt { font-size: .8rem; font-weight: 650; color: #375e53; }
+.meal-components dd { margin: 3px 0 0; font-size: .875rem; line-height: 1.5; overflow-wrap: anywhere; }
+.meal-components dd .caption { display: block; margin-top: 3px; }
+.daily-pattern { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.research-note { margin-top: 18px; }
+.research-note p, .source-context p { margin: 10px 0; }
+.source-list a { overflow-wrap: anywhere; }
+.source-context { margin: 8px 0 20px; }
+.source-context > p:not(.caption) { font-size: .875rem; line-height: 1.6; }
+.personal-instructions p:first-of-type { white-space: pre-wrap; overflow-wrap: anywhere; }
+@media (max-width: 600px) {
+  .daily-pattern { grid-template-columns: 1fr; }
+}
 button {
   min-height: 44px;
 }

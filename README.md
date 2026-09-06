@@ -13,6 +13,14 @@ A local feeding diary for infants and toddlers, with editable history, family me
 - Validated backups, previous-save recovery and storage error handling protect existing records. Older data is migrated without deleting the original keys.
 - JavaScript and CSS are built locally. The app no longer downloads React, Babel, Tailwind or chart libraries at runtime.
 
+## Research and meal plans
+
+The research basis is restricted to WHO 2023 and its commissioned evidence reports, LEAP and its follow-ups, Scandinavian/Nordic primary research and official recommendations, and New Zealand BLISS. The [12–23-month evidence review](docs/feeding-research-12-23-months.md) explains which findings apply during toddlerhood and how they inform the meal ideas. NNR2023, OTIS and PreventADALL are further research within the permitted Nordic family; they are not represented as documents confirmed to have been selected for the original app.
+
+The [original research synthesis](docs/revised-evidence-based-feeding-schedule.md) is preserved unchanged for reference. It contains claims that the newer review corrects, including a universal three-times-weekly allergen target and the assertion that BLISS prevented iron deficiency. Read it with the [research index and archive notice](docs/README.md).
+
+The meal plans are authored adaptations. They retain nutrient-dense ingredients, iron and energy components, fruit and vegetable variety, and appropriate preparation. Daily animal-source foods and the specific LEAP peanut regimen have source context; they do not imply meat at every meal or the same exposure quota for every allergen. Food notes describe ingredients and their role in a meal without claiming that a recipe guarantees a health outcome or nutritional adequacy.
+
 ## Using the app
 
 1. Open the deployed app in Safari, then use Share → Add to Home Screen if desired.
@@ -47,6 +55,8 @@ Source files live in `src/`. Run the build after changing source, templates or t
 
 ## Feeding guidance and limitations
 
-Food preparation and meal guidance link to NHS, CDC and other primary sources in the app. [Source notes](docs/revised-evidence-based-feeding-schedule.md) explain the scope. The recipes themselves are examples, not clinically validated treatment plans. The diary does not diagnose food allergies, measure nutrient adequacy, or interpret growth percentiles. It does not replace a child's individual feeding or allergy plan.
+The app links feeding claims to the selected research families, with a [separate review of scope and limitations](docs/feeding-research-12-23-months.md). A study protocol, a guideline recommendation and an authored recipe are different kinds of information. In particular, LEAP studied peanut consumption after introduction in infancy; it does not provide a first-introduction or missed-dose protocol for a toddler with suspected allergy.
+
+Recipes are examples, not clinically validated treatment plans. The selected evidence does not choose an appropriate milk replacement for cow's-milk protein allergy. Dairy-free settings therefore remain in place until changed in the profile, and a new age stage does not change an individual feeding or allergy plan. The diary does not diagnose food allergies, measure nutrient adequacy, or interpret growth percentiles.
 
 Data stays in browser storage; no account, analytics or cloud API is used. Opening an external reference visits that provider's website.

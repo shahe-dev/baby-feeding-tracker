@@ -87,6 +87,7 @@ export function emptyData() {
       weight: [],
       height: [],
       dairyFree: true,
+      feedingNotes: "",
       texture: "family",
       allergenStatus: {},
       allergenReviewedAt: {},
@@ -188,6 +189,7 @@ function normalizeProfile(raw) {
     birthDate,
     solidStartDate,
     dairyFree: profile.dairyFree ?? true,
+    feedingNotes: string(profile.feedingNotes, "Feeding instructions", 4000),
     texture: enumValue(
       profile.texture,
       ["puree", "mashed", "finger", "family"],

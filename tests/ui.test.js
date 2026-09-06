@@ -160,6 +160,52 @@ test("profile typing retains focus and saving weight preserves the unsaved heigh
   assert.equal(field("Height (cm)"), height);
 });
 
+test("feeding instructions survive profile saves and remain available beside meal ideas", async () => {
+  await mount(toddlerData());
+  await click(button("Profile"));
+  const notes = field("Your feeding instructions");
+  await fill(notes, "Continue the existing prescribed feed. Review plan at next appointment.");
+  await fill(field("Weight (kg)"), "10");
+  await submit(field("Weight (kg)").closest("form"));
+  assert.match(field("Your feeding instructions").value, /Continue the existing/);
+  await submit(notes.closest("form"));
+  assert.equal(saved().babyProfile.feedingNotes, notes.value);
+  await click(button("Meals"));
+  assert.match(document.querySelector(".personal-instructions").textContent, /Continue the existing/);
+});
+
+test("daily food prompts distinguish confirmed eating from offered, refused and unknown intake", async () => {
+  const data = toddlerData();
+  const date = new Date().toISOString();
+  data.feedingLog = [
+    { id: "eaten-beef", foods: ["beef"], consumption: "eaten" },
+    { id: "offered-lentils", foods: ["lentils"], consumption: "offered" },
+    { id: "refused-carrots", foods: ["carrots"], consumption: "refused" },
+    { id: "unknown-banana", foods: ["banana"], consumption: "unknown" },
+  ].map((feed) => ({ ...feed, date, mealType: "lunch", amount: "", description: "", notes: "", reaction: "None observed", reactionSeverity: "" }));
+  await mount(data);
+  const pattern = document.querySelector(".daily-pattern");
+  assert.match(pattern.textContent, /Eaten: Beef/);
+  assert.match(pattern.textContent, /Offered only: Lentils/);
+  assert.match(pattern.textContent, /Offered only: Carrots/);
+  assert.ok(!pattern.textContent.includes("Banana"));
+  assert.ok(!pattern.textContent.includes("Eaten: Carrots"));
+});
+
+test("research is available in the app with age scope and only the selected source families", async () => {
+  await mount(toddlerData());
+  await click(button("Profile"));
+  assert.match(document.body.textContent, /Reference values for 12–23 months/);
+  assert.match(document.body.textContent, /6 g of peanut protein/);
+  assert.match(document.body.textContent, /Original research summary \(archive\)/);
+  assert.match(document.body.textContent, /newly|identified during the further/i);
+  for (const a of document.querySelectorAll("a[href]")) {
+    assert.ok(!/nhs\.uk|cdc\.gov|fda\.gov/.test(a.href), a.href);
+  }
+  const registry = document.querySelector(".source-context");
+  assert.ok(registry?.textContent.trim(), "Source context must explain study scope");
+});
+
 test("a backdated meal can be saved, edited and reviewed with its actual amount", async () => {
   await mount(toddlerData());
   await click(button("Diary"));
