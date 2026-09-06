@@ -14,6 +14,7 @@ import {
 } from "./catalog.js";
 import { MEAL_PLANS, getRecommendedPlanKey } from "./plans.js";
 import { getEvidenceSource, RESEARCH_REVIEW_DATE } from "./evidence.js";
+import DayPlanner from "./DayPlanner.jsx";
 import {
   getCompletedMonths,
   getAgeLabel,
@@ -530,7 +531,7 @@ function AllergenSummary({ data, foods, now, compact = false, onProfile }) {
   );
 }
 
-function Dashboard({ data, foods, now, onLog, onEdit, onNavigate }) {
+function Dashboard({ data, foods, now, onLog, onEdit, onNavigate, onSavePlan, pending }) {
   const today = [...getTodayFeeds(data.feedingLog, now)].sort(
     (a, b) => new Date(b.date) - new Date(a.date),
   );
@@ -602,6 +603,9 @@ function Dashboard({ data, foods, now, onLog, onEdit, onNavigate }) {
           </button>
         </Notice>
       )}
+      {months >= 12 && months < 24 && (
+        <DayPlanner data={data} foods={foods} now={now} onSavePlan={onSavePlan} onLog={onLog} onProfile={() => onNavigate("profile")} Dialog={Modal} pending={pending} compact />
+      )}
       <div className="stat-grid">
         <div className="stat">
           <strong>{today.length}</strong>
@@ -616,26 +620,7 @@ function Dashboard({ data, foods, now, onLog, onEdit, onNavigate }) {
           <span>days logged in a row</span>
         </div>
       </div>
-      {months >= 12 && months < 24 && (
-        <section className="card routine-card">
-          <div className="section-icon">
-            <Icon name="plate" />
-          </div>
-          <div>
-            <h2>Room for family meals</h2>
-            <p>
-              Build meals around an iron-rich food, an energy-rich food and
-              vegetables or fruit. Our menu uses three meals and two optional
-              snacks as a flexible routine. Record drinks too, and follow appetite.
-            </p>
-            <button className="text-button" onClick={() => onNavigate("meals")}>
-              See meal ideas <Icon name="arrow" size={16} />
-            </button>
-          </div>
-        </section>
-      )}
-      {months >= 6 && months < 24 && <DailyFoodPattern today={today} foods={foods} />}
-      {firstOption && (
+      {firstOption && months < 12 && (
         <section className="card meal-pick">
           <SectionTitle title="An idea for today" eyebrow={plan.name} />
           <p className="meal-description">{firstOption.description}</p>
@@ -683,13 +668,14 @@ function Dashboard({ data, foods, now, onLog, onEdit, onNavigate }) {
           </Empty>
         )}
       </section>
-      <AllergenSummary
+      {months >= 6 && months < 24 && <details className="dashboard-details"><summary>Food variety from your diary</summary><DailyFoodPattern today={today} foods={foods} /></details>}
+      <details className="dashboard-details"><summary>Food reactions & allergen history</summary><AllergenSummary
         data={data}
         foods={foods}
         now={now}
         compact
         onProfile={() => onNavigate("profile")}
-      />
+      /></details>
     </div>
   );
 }
@@ -1022,7 +1008,7 @@ function Modal({ title, children, onClose, className = "" }) {
 function FeedEditor({ entry, seed, data, foods, onSave, onClose, saveError }) {
   const pending = useContext(SavingContext);
   const initial = useRef({
-    date: toLocalInputValue(entry?.date ? new Date(entry.date) : new Date()),
+    date: toLocalInputValue(entry?.date ? new Date(entry.date) : seed?.date ? new Date(seed.date) : new Date()),
     mealType: entry?.mealType || mealTypeFromLabel(seed?.mealType),
     foods: entry?.foods || seed?.foods || [],
     amount: entry?.amount || "",
@@ -2239,7 +2225,7 @@ function BackupPanel({ data, onImport, recovery = false, recoveryRaw }) {
   const confirmImport = async () => {
     if (
       !window.confirm(
-        `Replace ${data?.feedingLog?.length || 0} existing diary entries with ${preview.data.feedingLog.length} imported entries? Export a backup first if you need a separate copy.`,
+        `Replace ${data?.feedingLog?.length || 0} diary entries and ${Object.keys(data?.dailyPlans || {}).length} planned days with ${preview.data.feedingLog.length} imported entries and ${Object.keys(preview.data.dailyPlans || {}).length} planned days? Export a backup first if you need a separate copy.`,
       )
     )
       return;
@@ -2314,6 +2300,10 @@ function BackupPanel({ data, onImport, recovery = false, recoveryRaw }) {
               <dd>{preview.data.feedingLog.length}</dd>
             </div>
             <div>
+              <dt>Planned days</dt>
+              <dd>{Object.keys(preview.data.dailyPlans || {}).length}</dd>
+            </div>
+            <div>
               <dt>Custom foods / recipes</dt>
               <dd>
                 {preview.data.customFoods.length} /{" "}
@@ -2322,7 +2312,7 @@ function BackupPanel({ data, onImport, recovery = false, recoveryRaw }) {
             </div>
           </dl>
           <Notice kind="warning">
-            Restoring replaces the current profile, diary, foods and recipes.
+            Restoring replaces the current profile, diary, foods, recipes and meal plans.
             The previous saved snapshot is retained for recovery.
           </Notice>
           <div className="button-row">
@@ -2730,6 +2720,10 @@ export default function App() {
       },
       "Diary entry saved.",
     );
+  const saveDailyPlan = (date, plan) => commit(
+    { ...data, dailyPlans: { ...data.dailyPlans, [date]: plan } },
+    "Meal choices saved.",
+  );
   const removeFeed = (feed) => {
     if (
       window.confirm(
@@ -2875,6 +2869,8 @@ export default function App() {
               onLog={(seed) => setEditor({ seed })}
               onEdit={(entry) => setEditor({ entry })}
               onNavigate={navigate}
+              onSavePlan={saveDailyPlan}
+              pending={pending}
             />
           )}
           {activeTab === "diary" && (
@@ -2887,14 +2883,22 @@ export default function App() {
             />
           )}
           {activeTab === "meals" && (
-            <MealPlanner
+            <div className="page">
+              {((getCompletedMonths(data.babyProfile.birthDate, now) >= 12 && getCompletedMonths(data.babyProfile.birthDate, now) < 24) || Object.keys(data.dailyPlans || {}).length > 0) && (
+                <DayPlanner key={importGeneration} data={data} foods={foods} now={now} onSavePlan={saveDailyPlan} onLog={(seed) => setEditor({ seed })} onProfile={() => navigate("profile")} Dialog={Modal} pending={pending} />
+              )}
+              <details className="planner-library" open={!(getCompletedMonths(data.babyProfile.birthDate, now) >= 12 && getCompletedMonths(data.babyProfile.birthDate, now) < 24) || undefined}>
+                <summary>Browse all stages and recipes</summary>
+                <MealPlanner
               data={data}
               foods={foods}
               now={now}
               browseKey={browseKey}
               onBrowse={setBrowseKey}
               onLog={(seed) => setEditor({ seed })}
-            />
+                />
+              </details>
+            </div>
           )}
           {activeTab === "foods" && (
             <FoodLibrary

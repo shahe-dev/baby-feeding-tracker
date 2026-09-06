@@ -26,16 +26,31 @@ const infantEvidenceNote =
 const toddlerSourceIds = [
   "who2023", "whoResponsive", "blissProtocol", "leap", "nordic2023", "otis",
 ];
+const snackFruitPreparation = {
+  banana: "Peel a ripe banana and mash the soft flesh.",
+  pear: "Peel and core the pear; cook until soft and mash.",
+  apple: "Peel and core the apple; cook until soft and mash.",
+};
 const optionalPeanutSnack = (fruitId, fruitDescription) => ({
   time: "Afternoon snack",
   optional: true,
   options: [
     {
       foods: [fruitId, "peanutButter"],
+      title: `${fruitId[0].toUpperCase()}${fruitId.slice(1)} and peanut butter`,
+      steps: [
+        snackFruitPreparation[fruitId],
+        "Only if peanut is already tolerated, stir smooth peanut butter through the fruit until well thinned with no sticky lumps.",
+      ],
       description: `${fruitDescription} with smooth peanut butter well thinned into food, only if peanut is already tolerated`,
     },
     {
       foods: [fruitId, "avocado"],
+      title: `${fruitId[0].toUpperCase()}${fruitId.slice(1)} and avocado`,
+      steps: [
+        snackFruitPreparation[fruitId],
+        "Remove the avocado skin and stone, mash the soft flesh and serve with the fruit.",
+      ],
       description: `${fruitDescription} with soft mashed avocado`,
     },
   ],
@@ -914,22 +929,53 @@ export const MEAL_PLANS = {
             "Breakfast",
             ["egg", "spinach", "avocado", "bread"],
             "Fully cooked scrambled egg with finely chopped cooked spinach, mashed avocado and seed-free wheat toast",
+            {
+              title: "Spinach eggs and avocado toast",
+              steps: [
+                "Cook the spinach until soft and chop finely. Scramble with the egg until fully cooked.",
+                "Mash the avocado and spread onto lightly toasted, seed-free wheat bread.",
+                "Serve the eggs alongside, with textures and pieces adjusted to feeding skills.",
+              ],
+            },
           ),
           meal(
             "Lunch",
             ["beef", "sweetPotato", "broccoli", "oliveOil"],
             "Moist minced beef with sweet potato mash, soft broccoli and olive oil",
+            {
+              title: "Beef and sweet potato mash",
+              steps: [
+                "Cook the minced beef thoroughly, keeping it moist and breaking up firm pieces.",
+                "Cook the sweet potato and broccoli until soft; mash the sweet potato.",
+                "Stir olive oil through the mash and serve with the beef and soft broccoli.",
+              ],
+            },
           ),
           meal(
             "Dinner",
             ["lentils", "carrots", "courgette", "rice", "oliveOil"],
             "Thick lentil, carrot and courgette stew with soft rice and olive oil",
+            {
+              title: "Lentil and vegetable rice bowl",
+              steps: [
+                "Cook the lentils, carrots and courgette until very soft, then mash or chop as needed.",
+                "Cook the rice until soft and keep it moist.",
+                "Stir olive oil into the lentils and vegetables and serve with the rice.",
+              ],
+            },
           ),
           meal(
             "Morning snack",
             ["pear"],
             "Soft ripe pear, peeled and cut to suit feeding skills",
-            { optional: true },
+            {
+              title: "Soft pear pieces",
+              steps: [
+                "Peel a soft ripe pear and remove the core and seeds.",
+                "Cut into manageable pieces, or mash if needed for feeding skills.",
+              ],
+              optional: true,
+            },
           ),
           optionalPeanutSnack("banana", "Mashed ripe banana"),
         ],
@@ -941,28 +987,66 @@ export const MEAL_PLANS = {
             "Breakfast",
             ["chickpeas", "tomato", "avocado", "bread"],
             "Mashed chickpeas and avocado on seed-free wheat toast, with soft cooked tomato",
+            {
+              title: "Chickpea and avocado toast",
+              steps: [
+                "Cook the chickpeas until very soft and mash with ripe avocado.",
+                "Cook the tomato until soft and cut or mash as needed.",
+                "Spread the chickpea mixture thinly onto lightly toasted, seed-free wheat bread; serve with tomato.",
+              ],
+            },
           ),
           meal(
             "Lunch",
             ["salmon", "lentils", "broccoli", "oliveOil"],
             "Cooked, carefully deboned salmon with soft lentils, broccoli and olive oil",
+            {
+              title: "Salmon with lentils and broccoli",
+              steps: [
+                "Cook the salmon through, remove the skin and check carefully for bones before flaking.",
+                "Cook the lentils and broccoli until soft enough to mash.",
+                "Stir olive oil into the lentils and serve with the salmon flakes and broccoli.",
+              ],
+            },
           ),
           meal(
             "Dinner",
             ["chicken", "sweetPotato", "peas", "oliveOil"],
             "Tender shredded chicken with sweet potato, flattened peas and olive oil",
+            {
+              title: "Chicken and sweet potato bowl",
+              steps: [
+                "Cook the chicken thoroughly until tender; remove bones and skin and shred finely.",
+                "Cook the sweet potato and peas until soft, then mash the potato and flatten the peas.",
+                "Mix olive oil into the sweet potato and serve with the chicken and peas.",
+              ],
+            },
           ),
           meal(
             "Morning snack",
             ["banana"],
             "Soft ripe banana pieces",
-            { optional: true },
+            {
+              title: "Ripe banana pieces",
+              steps: [
+                "Peel a ripe banana and check that the flesh is soft.",
+                "Cut into manageable pieces or mash to suit feeding skills.",
+              ],
+              optional: true,
+            },
           ),
           meal(
             "Afternoon snack",
             ["hummus", "carrots"],
             "A thin hummus spread on soft cooked carrot pieces, if its ingredients are tolerated",
-            { optional: true },
+            {
+              title: "Soft carrots with hummus",
+              steps: [
+                "Cook the carrots until soft enough to mash and cut into manageable pieces.",
+                "Check the hummus ingredients against existing restrictions, then use it as a thin spread on the carrots.",
+              ],
+              optional: true,
+            },
           ),
         ],
       },
@@ -973,28 +1057,66 @@ export const MEAL_PLANS = {
             "Breakfast",
             ["tofu", "spinach", "avocado", "bread"],
             "Soft tofu with finely chopped cooked spinach, mashed avocado and seed-free wheat toast",
+            {
+              title: "Tofu and spinach with avocado toast",
+              steps: [
+                "Cook the spinach until soft and chop finely; warm the soft tofu and break it into manageable pieces.",
+                "Mash ripe avocado and spread onto lightly toasted, seed-free wheat bread.",
+                "Serve the tofu and spinach alongside the toast.",
+              ],
+            },
           ),
           meal(
             "Lunch",
             ["lamb", "quinoa", "butternutSquash", "oliveOil"],
             "Tender minced lamb with moist quinoa, soft butternut squash and olive oil",
+            {
+              title: "Lamb and squash with quinoa",
+              steps: [
+                "Cook the minced lamb thoroughly until tender, breaking up firm pieces.",
+                "Cook the quinoa and peeled butternut squash until soft; keep the quinoa moist.",
+                "Mash or chop the squash as needed and stir in olive oil before serving with the lamb and quinoa.",
+              ],
+            },
           ),
           meal(
             "Dinner",
             ["beans", "potato", "tomato", "oliveOil"],
             "Mashed beans and soft potato with cooked tomato and olive oil",
+            {
+              title: "Beans and potato with tomato",
+              steps: [
+                "Cook the beans fully until very soft and mash; cook the potato until soft.",
+                "Cook the tomato until soft and stir through olive oil.",
+                "Spoon the beans and tomato over the potato, mashing or breaking it up as needed.",
+              ],
+            },
           ),
           meal(
             "Morning snack",
             ["mango"],
             "Soft ripe mango pieces without skin or stone",
-            { optional: true },
+            {
+              title: "Soft mango pieces",
+              steps: [
+                "Peel a ripe mango and remove the stone.",
+                "Cut soft flesh into manageable pieces or mash to suit feeding skills.",
+              ],
+              optional: true,
+            },
           ),
           meal(
             "Afternoon snack",
             ["apple", "almondButter"],
             "Soft cooked apple with smooth almond butter well thinned into it, if almond is tolerated",
-            { optional: true },
+            {
+              title: "Apple and almond butter",
+              steps: [
+                "Peel and core the apple; cook until soft and mash.",
+                "If almond is already tolerated, stir smooth almond butter through the apple until well thinned with no sticky lumps.",
+              ],
+              optional: true,
+            },
           ),
         ],
       },
@@ -1005,22 +1127,53 @@ export const MEAL_PLANS = {
             "Breakfast",
             ["egg", "tomato", "bread", "oliveOil"],
             "Fully cooked scrambled egg with soft tomato and olive oil, served with seed-free wheat toast",
+            {
+              title: "Tomato eggs with toast",
+              steps: [
+                "Cook the tomato in olive oil until soft.",
+                "Add beaten egg and scramble until fully cooked.",
+                "Serve with lightly toasted, seed-free wheat bread, cut to suit feeding skills.",
+              ],
+            },
           ),
           meal(
             "Lunch",
             ["lentils", "sweetPotato", "spinach", "oliveOil"],
             "Thick lentil and sweet potato stew with finely chopped cooked spinach and olive oil",
+            {
+              title: "Lentil and sweet potato stew",
+              steps: [
+                "Cook the lentils and peeled sweet potato until very soft.",
+                "Add finely chopped spinach and cook until soft.",
+                "Mash to the desired texture and stir through olive oil.",
+              ],
+            },
           ),
           meal(
             "Dinner",
             ["turkey", "barley", "peas", "carrots", "oliveOil"],
             "Tender minced turkey with very soft mashed barley, flattened peas, tender carrots and olive oil",
+            {
+              title: "Turkey and barley with vegetables",
+              steps: [
+                "Cook the minced turkey thoroughly until tender and break up firm pieces.",
+                "Cook the barley, peas and carrots until very soft; mash the barley, flatten the peas and cut or mash the carrots.",
+                "Stir through olive oil and serve together, keeping the mixture moist.",
+              ],
+            },
           ),
           meal(
             "Morning snack",
             ["berries"],
             "Soft berries, mashed or flattened as needed",
-            { optional: true },
+            {
+              title: "Mashed berries",
+              steps: [
+                "Wash the berries and remove any stems or hard parts.",
+                "Mash or flatten the soft fruit to suit feeding skills.",
+              ],
+              optional: true,
+            },
           ),
           optionalPeanutSnack("pear", "Soft cooked pear, mashed"),
         ],
@@ -1032,28 +1185,66 @@ export const MEAL_PLANS = {
             "Breakfast",
             ["chickpeas", "avocado", "tomato", "bread"],
             "Mashed chickpeas with avocado and soft cooked tomato, served with seed-free wheat toast",
+            {
+              title: "Chickpea and avocado bowl",
+              steps: [
+                "Cook the chickpeas until very soft and mash with ripe avocado.",
+                "Cook the tomato until soft and cut or mash as needed.",
+                "Serve together with lightly toasted, seed-free wheat bread.",
+              ],
+            },
           ),
           meal(
             "Lunch",
             ["beef", "pasta", "courgette", "tomato", "oliveOil"],
             "Moist minced beef and courgette in cooked tomato and olive-oil sauce, with soft egg-free wheat pasta",
+            {
+              title: "Beef and courgette pasta",
+              steps: [
+                "Cook the minced beef thoroughly, breaking it up, with the courgette until tender.",
+                "Add tomato and olive oil and cook until the vegetables are soft and the sauce is moist.",
+                "Cook the egg-free wheat pasta until soft; cut as needed and mix with the sauce.",
+              ],
+            },
           ),
           meal(
             "Dinner",
             ["whitefish", "beans", "broccoli", "potato", "oliveOil"],
             "Cooked, carefully deboned white fish with mashed beans, soft potato, broccoli and olive oil",
+            {
+              title: "White fish with bean and potato mash",
+              steps: [
+                "Cook the fish through, remove the skin and check carefully for bones before flaking.",
+                "Cook the beans fully until very soft; cook the potato and broccoli until soft.",
+                "Mash the beans and potato with olive oil and serve with fish flakes and soft broccoli.",
+              ],
+            },
           ),
           meal(
             "Morning snack",
             ["orange"],
             "Chopped orange flesh with seeds and tough membranes removed",
-            { optional: true },
+            {
+              title: "Soft orange pieces",
+              steps: [
+                "Peel the orange and remove seeds and tough membranes.",
+                "Chop the soft flesh into manageable pieces.",
+              ],
+              optional: true,
+            },
           ),
           meal(
             "Afternoon snack",
             ["avocado", "bread"],
             "Mashed avocado on seed-free wheat toast",
-            { optional: true },
+            {
+              title: "Avocado toast",
+              steps: [
+                "Remove the avocado skin and stone and mash the soft flesh.",
+                "Spread thinly on lightly toasted, seed-free wheat bread and cut to suit feeding skills.",
+              ],
+              optional: true,
+            },
           ),
         ],
       },
@@ -1064,22 +1255,53 @@ export const MEAL_PLANS = {
             "Breakfast",
             ["egg", "spinach", "avocado"],
             "Fully cooked spinach omelette, cut to suit feeding skills, with soft avocado",
+            {
+              title: "Spinach omelette with avocado",
+              steps: [
+                "Cook the spinach until soft, chop finely and mix with beaten egg.",
+                "Cook the omelette until fully set, then cut into manageable pieces.",
+                "Serve with ripe avocado, mashed or cut as needed.",
+              ],
+            },
           ),
           meal(
             "Lunch",
             ["beans", "rice", "cauliflower", "tomato", "oliveOil"],
             "Mashed beans with soft cauliflower and tomato, served with moist rice and olive oil",
+            {
+              title: "Bean and cauliflower rice bowl",
+              steps: [
+                "Cook the beans fully until very soft and mash; cook the rice until soft and keep it moist.",
+                "Cook the cauliflower and tomato until soft and mash or chop as needed.",
+                "Stir olive oil into the beans and vegetables and serve with the rice.",
+              ],
+            },
           ),
           meal(
             "Dinner",
             ["chicken", "lentils", "sweetPotato", "oliveOil"],
             "Tender shredded chicken in a thick lentil and sweet potato stew with olive oil",
+            {
+              title: "Chicken and lentil stew",
+              steps: [
+                "Cook the chicken thoroughly until tender; remove bones and skin and shred finely.",
+                "Cook the lentils and peeled sweet potato until very soft, then mash as needed.",
+                "Stir in the chicken and olive oil, keeping the stew moist.",
+              ],
+            },
           ),
           meal(
             "Morning snack",
             ["mango"],
             "Soft ripe mango pieces without skin or stone",
-            { optional: true },
+            {
+              title: "Soft mango pieces",
+              steps: [
+                "Peel a ripe mango and remove the stone.",
+                "Cut soft flesh into manageable pieces or mash to suit feeding skills.",
+              ],
+              optional: true,
+            },
           ),
           optionalPeanutSnack("apple", "Soft cooked apple, mashed"),
         ],
@@ -1091,28 +1313,66 @@ export const MEAL_PLANS = {
             "Breakfast",
             ["oats", "banana", "egg", "almondButter"],
             "Soft porridge cooked in water with mashed banana and smooth almond butter stirred through, with fully cooked egg alongside",
+            {
+              title: "Banana and almond porridge with egg",
+              steps: [
+                "Cook the oats in water until soft; mash the ripe banana and stir it through.",
+                "Mix smooth almond butter thoroughly into the porridge until well thinned with no sticky lumps.",
+                "Cook the egg until the white and yolk are firm; mash or cut and serve alongside.",
+              ],
+            },
           ),
           meal(
             "Lunch",
             ["lamb", "carrots", "potato", "oliveOil"],
             "Moist minced lamb stew with tender carrots, soft potato and olive oil",
+            {
+              title: "Lamb, carrot and potato stew",
+              steps: [
+                "Cook the minced lamb thoroughly, breaking up firm pieces.",
+                "Add peeled potato and carrots and cook until the meat is tender and vegetables are very soft.",
+                "Mash or cut as needed and stir through olive oil, keeping the stew moist.",
+              ],
+            },
           ),
           meal(
             "Dinner",
             ["lentils", "courgette", "spinach", "chapati", "oliveOil"],
             "Thick lentils with soft courgette, finely chopped cooked spinach and olive oil, with softened dairy-free wheat chapati",
+            {
+              title: "Lentils and greens with chapati",
+              steps: [
+                "Cook the lentils, courgette and finely chopped spinach until soft.",
+                "Mash as needed and stir through olive oil.",
+                "Check the wheat chapati is dairy-free, soften it with the lentil mixture and cut to suit feeding skills.",
+              ],
+            },
           ),
           meal(
             "Morning snack",
             ["berries", "pear"],
             "Mashed berries with soft ripe pear pieces",
-            { optional: true },
+            {
+              title: "Pear and berries",
+              steps: [
+                "Wash the berries; peel and core a soft ripe pear.",
+                "Mash the berries and cut or mash the pear to suit feeding skills, then serve together.",
+              ],
+              optional: true,
+            },
           ),
           meal(
             "Afternoon snack",
             ["hummus", "carrots"],
             "A thin hummus spread on soft cooked carrot pieces, if its ingredients are tolerated",
-            { optional: true },
+            {
+              title: "Soft carrots with hummus",
+              steps: [
+                "Cook the carrots until soft enough to mash and cut into manageable pieces.",
+                "Check the hummus ingredients against existing restrictions, then use it as a thin spread on the carrots.",
+              ],
+              optional: true,
+            },
           ),
         ],
       },

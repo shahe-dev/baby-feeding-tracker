@@ -55,6 +55,7 @@ test("legacy migration preserves records, defaults dairy-free, and is read-only"
   assert.equal(loaded.error, null);
   assert.equal(loaded.data.babyProfile.dairyFree, true);
   assert.equal(loaded.data.babyProfile.feedingNotes, "");
+  assert.deepEqual(loaded.data.dailyPlans, {});
   assert.equal(loaded.data.feedingLog[0].consumption, "unknown");
   assert.equal(loaded.data.feedingLog[0].amount, "2 tbsp");
   assert.equal(loaded.data.babyProfile.weight[0].value, 9);
@@ -231,6 +232,179 @@ test("custom foods and complete family recipes survive export and import", () =>
   const restored = parseBackup(createBackup(data));
   assert.deepEqual(restored.customFoods, data.customFoods);
   assert.deepEqual(restored.recipes, data.recipes);
+});
+
+const planMeal = () => ({
+  slot: "lunch",
+  recipeId: "recipe-1",
+  title: "Family lunch",
+  description: "A saved recipe snapshot.",
+  foods: ["hummus"],
+  steps: ["Prepare the meal."],
+  sourceIds: ["who-2023"],
+});
+const dailyPlan = (meals = [planMeal()]) => ({
+  stage: "toddler12-24",
+  meals,
+});
+
+test("future daily plans with all meal slots and custom foods survive save and backup import", () => {
+  const data = normalizeData(legacy());
+  data.customFoods = [
+    {
+      id: "custom-bread",
+      name: "Family bread",
+      category: "Custom foods",
+      allergens: ["wheat"],
+      preparation: "Serve soft.",
+    },
+  ];
+  data.dailyPlans = {
+    "2099-02-28": dailyPlan(
+      ["breakfast", "lunch", "dinner", "morningSnack", "afternoonSnack"].map(
+        (slot) => ({ ...planMeal(), slot, foods: ["custom-bread", "hummus"] }),
+      ),
+    ),
+    "2099-03-01": dailyPlan([]),
+  };
+  const storage = memoryStorage();
+  const saved = saveData(data, { storage });
+  assert.deepEqual(loadData(storage).data.dailyPlans, data.dailyPlans);
+  assert.deepEqual(saved.feedingLog, data.feedingLog);
+  const restored = parseBackup(createBackup(saved));
+  assert.deepEqual(restored, saved);
+  const anotherDevice = memoryStorage();
+  saveData(restored, { storage: anotherDevice, expectedRevision: 0 });
+  assert.deepEqual(loadData(anotherDevice).data.dailyPlans, data.dailyPlans);
+});
+
+test("saved daily plan snapshots survive deletion of their source recipe", () => {
+  const data = emptyData();
+  data.recipes = [
+    {
+      id: "recipe-1",
+      name: "Family lunch",
+      foods: ["hummus"],
+      description: "Original recipe.",
+    },
+  ];
+  data.dailyPlans = { "2025-02-28": dailyPlan() };
+  const storage = memoryStorage();
+  const saved = saveData(data, { storage });
+  const changed = saveData({ ...saved, recipes: [] }, { storage });
+  assert.deepEqual(changed.dailyPlans, data.dailyPlans);
+  assert.deepEqual(
+    parseBackup(createBackup(changed)).dailyPlans,
+    data.dailyPlans,
+  );
+  assert.deepEqual(changed.recipes, []);
+});
+
+test("saved recipe snapshots retain prefixed IDs and the complete source union", () => {
+  const data = emptyData();
+  const recipeId = `saved-${"r".repeat(120)}`;
+  const sourceIds = Array.from({ length: 19 }, (_, index) => `source-${index}`);
+  data.dailyPlans = {
+    "2099-01-01": dailyPlan([{ ...planMeal(), recipeId, sourceIds }]),
+  };
+  const storage = memoryStorage();
+  const saved = saveData(data, { storage });
+  const restored = parseBackup(createBackup(saved));
+  assert.equal(restored.dailyPlans["2099-01-01"].meals[0].recipeId, recipeId);
+  assert.deepEqual(
+    restored.dailyPlans["2099-01-01"].meals[0].sourceIds,
+    sourceIds,
+  );
+  assert.deepEqual(loadData(storage).data.dailyPlans, data.dailyPlans);
+});
+
+test("older backups gain empty daily plans without rewriting existing device data", () => {
+  for (const version of [1, 2]) {
+    const oldData = { ...legacy(), version };
+    const original = JSON.stringify(oldData);
+    const storage = memoryStorage({ [STORAGE_KEY]: original });
+    const loaded = loadData(storage);
+    assert.equal(loaded.error, null);
+    assert.deepEqual(loaded.data.dailyPlans, {});
+    assert.equal(storage.getItem(STORAGE_KEY), original);
+    assert.equal(storage.getItem(PREVIOUS_KEY), null);
+    assert.deepEqual(parseBackup(original).dailyPlans, {});
+  }
+});
+
+test("malformed daily plans are rejected before changing saved data or previous backup", () => {
+  const base = normalizeData(legacy());
+  const original = JSON.stringify(base);
+  const previous = JSON.stringify(emptyData());
+  const storage = memoryStorage({
+    [STORAGE_KEY]: original,
+    [PREVIOUS_KEY]: previous,
+  });
+  const wrap = (plan) => ({ "2099-01-01": plan });
+  const mealChanges = [
+    { slot: "snack" },
+    { recipeId: "r".repeat(161) },
+    { recipeId: " \n" },
+    { title: "t".repeat(161) },
+    { title: "\t " },
+    { title: undefined },
+    { description: "d".repeat(2001) },
+    { foods: ["missing-food"] },
+    { foods: [] },
+    { foods: {} },
+    { steps: Array(9).fill("Step") },
+    { steps: ["s".repeat(501)] },
+    { steps: [null] },
+    { sourceIds: Array(33).fill("who-2023") },
+    { sourceIds: ["s".repeat(81)] },
+    { sourceIds: [123] },
+  ];
+  const invalidPlans = [
+    null,
+    [],
+    "invalid",
+    { "2099-02-29": dailyPlan() },
+    { "2023-12-31": dailyPlan() },
+    { "2099-1-01": dailyPlan() },
+    { "2099-01-01T12:00:00Z": dailyPlan() },
+    JSON.parse('{"__proto__": {"stage":"toddler12-24","meals":[]}}'),
+    { constructor: dailyPlan() },
+    { prototype: dailyPlan() },
+    wrap(null),
+    wrap([]),
+    wrap({ stage: "infant", meals: [] }),
+    wrap({ stage: "toddler12-24", meals: {} }),
+    wrap(dailyPlan([planMeal(), planMeal()])),
+    wrap(dailyPlan(Array(6).fill(planMeal()))),
+    wrap(dailyPlan([null])),
+    wrap(dailyPlan([JSON.parse('{"__proto__": {}}')])),
+    ...mealChanges.map((change) =>
+      wrap(dailyPlan([{ ...planMeal(), ...change }])),
+    ),
+  ];
+  for (const dailyPlans of invalidPlans) {
+    const invalid = { ...base, dailyPlans };
+    assert.throws(() => parseBackup(JSON.stringify(invalid)));
+    assert.throws(() => saveData(invalid, { storage }));
+    assert.equal(storage.getItem(STORAGE_KEY), original);
+    assert.equal(storage.getItem(PREVIOUS_KEY), previous);
+  }
+});
+
+test("daily plans retain historical stages and enforce the saved-day limit", () => {
+  const data = normalizeData(legacy());
+  // A retained plan is not reclassified or removed as the child ages.
+  data.dailyPlans = { "2024-01-01": dailyPlan([]) };
+  assert.deepEqual(normalizeData(data).dailyPlans, data.dailyPlans);
+  data.dailyPlans = Object.fromEntries(
+    Array.from({ length: 1000 }, (_, index) => [
+      new Date(Date.UTC(2090, 0, index + 1)).toISOString().slice(0, 10),
+      dailyPlan([]),
+    ]),
+  );
+  assert.equal(Object.keys(normalizeData(data).dailyPlans).length, 1000);
+  data.dailyPlans["2099-01-01"] = dailyPlan([]);
+  assert.throws(() => normalizeData(data), /maximum of 1000 saved days/);
 });
 
 test("concurrent saves are serialized and the stale draft is rejected", async () => {

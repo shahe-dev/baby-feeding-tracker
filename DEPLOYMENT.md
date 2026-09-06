@@ -28,12 +28,16 @@ Before release, verify on the intended iPhone:
 
 1. Export a backup from the existing app.
 2. Open the new build on the same origin and verify profile, history, amounts and growth records.
-3. Confirm a backdated meal, edit it and reload to verify persistence.
-4. Install to Home Screen, close and reopen, then test the app in airplane mode.
-5. Test an update while the app is open; saved records should persist and the update should wait for the user's action.
-6. Check VoiceOver labels, larger text, keyboard visibility and safe-area spacing.
+3. With a test profile aged 12–23 months, check the daily planner on Today and Meals. Choose Tomorrow or another eligible date, use **Use this day**, and reload. The choices should remain on that date without adding diary entries or allergen exposures. Confirm that future meals cannot be logged early.
+4. Search the **Swap** chooser by recipe and ingredient, select an eligible saved family recipe, and add or remove an optional snack. Verify that each choice saves, recipe preparation steps open, and **Why this meal?** stays collapsed until requested. Unknown custom ingredient roles must not be presented as assessed nutrition.
+5. Check that the shopping list contains only ingredients from eligible meals shown for the selected date, with no ingredients added from other swap candidates. Test copying the list, including the manual-copy fallback when clipboard access is unavailable.
+6. Change a restriction in the test profile and verify that the saved meal stays visible with a review flag, cannot be logged through the planner, and is excluded from the shopping list. Peanut recipes should only appear as suggestions after peanut is reviewed as tolerated. Swap the affected meal and verify the saved day updates.
+7. Log a planned meal on an eligible past or current date, confirm its intake, edit the record and reload. The saved plan and diary entry should remain separate. On a test copy, export and restore a backup containing saved days; check planned-day counts in the restore preview and verify the restored choices. Also check an older backup without `dailyPlans`.
+8. Install to Home Screen, close and reopen, then test viewing saved days, swapping eligible recipes and logging food in airplane mode after the build has been cached.
+9. Test an update while the app is open; saved plans and diary records should persist and the update should wait for the user's action.
+10. Check VoiceOver labels, larger text, keyboard visibility and safe-area spacing, including the date controls, swap dialog and expandable recipe details.
 
-Automated tests exercise date calculations, imports, React forms and service-worker failure behavior. They do not replace a real iOS installation and offline test.
+Automated tests cover date calculations, daily plan selection, storage and imports, React forms and service-worker failure behavior. These checks do not establish that a physical iPhone installation, update or offline test has been completed. Record those results separately for each release.
 
 ## Data recovery
 
