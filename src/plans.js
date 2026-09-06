@@ -1,13 +1,11 @@
 import { getCompletedMonths, localDateKey } from "./domain.js";
-import { SOURCES } from "./catalog.js";
+import { getEvidenceSource } from "./evidence.js";
 
 const meal = (time, foods, description, extra = {}) => ({
   time,
   options: [{ foods, description }],
   ...extra,
 });
-const sourceByLabel = (prefix) =>
-  SOURCES.find((item) => item.label.startsWith(prefix));
 const sharedGuidance = [
   "Menu ideas are optional. Use foods suitable for your child and keep existing allergy restrictions.",
   "Check ingredient labels; adjust every recipe for feeding skills and confirmed dietary needs.",
@@ -16,27 +14,45 @@ const sharedGuidance = [
 ];
 const infantGuidance = [
   ...sharedGuidance,
-  "Breast milk or suitable infant formula remains the main drink before 12 months. Continue prescribed feeds.",
-  "Offer small tastes when starting solids around six months, then build meals gradually. Between meals under one, offer milk feeds if hungry.",
-  "Introduce new allergens one at a time. With an existing food allergy or eczema, seek advice before introducing foods.",
+  "These are recipe ideas retained from the earlier plan. Numbered days are choices, not a required timetable for introducing foods or allergens.",
+  "Complementary foods begin around six months. Adapt the number of meals and texture to feeding experience, appetite and your child's individual advice.",
+  "Continue usual breast milk or prescribed formula feeds. These recipes do not assess the complete diet or replace a feeding plan.",
+  "Use allergen-containing recipes only when that ingredient is already tolerated under your child's individual plan. The menu does not instruct first introductions.",
 ];
-const planSources = [
-  sourceByLabel("NHS: feeding"),
-  sourceByLabel("NHS: introducing"),
-  sourceByLabel("CDC: food"),
-  sourceByLabel("CDC: hunger"),
+const planSourceIds = ["who2023", "whoResponsive", "blissProtocol", "leap"];
+const planSources = planSourceIds.map(getEvidenceSource);
+const infantEvidenceNote =
+  "The recipes, portions, numbered days and meal times are practical adaptations retained from the project, not a validated WHO, LEAP or BLISS menu. Sources support specific principles, not this exact schedule.";
+const toddlerSourceIds = [
+  "who2023", "whoResponsive", "blissProtocol", "leap", "nordic2023", "otis",
 ];
+const optionalPeanutSnack = (fruitId, fruitDescription) => ({
+  time: "Afternoon snack",
+  optional: true,
+  options: [
+    {
+      foods: [fruitId, "peanutButter"],
+      description: `${fruitDescription} with smooth peanut butter well thinned into food, only if peanut is already tolerated`,
+    },
+    {
+      foods: [fruitId, "avocado"],
+      description: `${fruitDescription} with soft mashed avocado`,
+    },
+  ],
+});
 
 export const MEAL_PLANS = {
   "week1-2": {
-    name: "First tastes at 6 months",
+    name: "Early meal ideas at 6 months",
     ageRange: "6 months",
     goals: [
       "Start solids when developmentally ready",
       "Try small tastes and soft textures",
-      "Introduce new allergens individually with appropriate advice",
+      "Use tolerated foods and follow individual allergy advice",
     ],
     guidance: [...infantGuidance],
+    evidenceNote: infantEvidenceNote,
+    sourceIds: planSourceIds,
     sources: planSources,
     days: [
       {
@@ -58,7 +74,7 @@ export const MEAL_PLANS = {
             ],
             allergenIntro: {
               food: "peanutButter",
-              note: "Optional only if suitable for your child. Introduce one new allergen at a time. With an existing allergy or eczema, follow your clinician’s advice. Confirm what was actually eaten when logging.",
+              note: "Use this recipe only if the named allergen is already tolerated under your child’s individual plan. Numbered days do not set an introduction schedule. Confirm what was actually eaten when logging.",
             },
           },
         ],
@@ -73,7 +89,7 @@ export const MEAL_PLANS = {
             {
               allergenIntro: {
                 food: "peanutButter",
-                note: "Optional only if suitable for your child. Introduce one new allergen at a time. With an existing allergy or eczema, follow your clinician’s advice. Confirm what was actually eaten when logging.",
+                note: "Use this recipe only if the named allergen is already tolerated under your child’s individual plan. Numbered days do not set an introduction schedule. Confirm what was actually eaten when logging.",
               },
             },
           ),
@@ -89,7 +105,7 @@ export const MEAL_PLANS = {
             {
               allergenIntro: {
                 food: "peanutButter",
-                note: "Optional only if suitable for your child. Introduce one new allergen at a time. With an existing allergy or eczema, follow your clinician’s advice. Confirm what was actually eaten when logging.",
+                note: "Use this recipe only if the named allergen is already tolerated under your child’s individual plan. Numbered days do not set an introduction schedule. Confirm what was actually eaten when logging.",
               },
             },
           ),
@@ -105,7 +121,7 @@ export const MEAL_PLANS = {
             {
               allergenIntro: {
                 food: "egg",
-                note: "Optional only if suitable for your child. Introduce one new allergen at a time. With an existing allergy or eczema, follow your clinician’s advice. Confirm what was actually eaten when logging.",
+                note: "Use this recipe only if the named allergen is already tolerated under your child’s individual plan. Numbered days do not set an introduction schedule. Confirm what was actually eaten when logging.",
               },
             },
           ),
@@ -126,7 +142,7 @@ export const MEAL_PLANS = {
             {
               allergenIntro: {
                 food: "egg",
-                note: "Optional only if suitable for your child. Introduce one new allergen at a time. With an existing allergy or eczema, follow your clinician’s advice. Confirm what was actually eaten when logging.",
+                note: "Use this recipe only if the named allergen is already tolerated under your child’s individual plan. Numbered days do not set an introduction schedule. Confirm what was actually eaten when logging.",
               },
             },
           ),
@@ -147,7 +163,7 @@ export const MEAL_PLANS = {
             {
               allergenIntro: {
                 food: "egg",
-                note: "Optional only if suitable for your child. Introduce one new allergen at a time. With an existing allergy or eczema, follow your clinician’s advice. Confirm what was actually eaten when logging.",
+                note: "Use this recipe only if the named allergen is already tolerated under your child’s individual plan. Numbered days do not set an introduction schedule. Confirm what was actually eaten when logging.",
               },
             },
           ),
@@ -168,7 +184,7 @@ export const MEAL_PLANS = {
             {
               allergenIntro: {
                 food: "tahini",
-                note: "Optional only if suitable for your child. Introduce one new allergen at a time. With an existing allergy or eczema, follow your clinician’s advice. Confirm what was actually eaten when logging.",
+                note: "Use this recipe only if the named allergen is already tolerated under your child’s individual plan. Numbered days do not set an introduction schedule. Confirm what was actually eaten when logging.",
               },
             },
           ),
@@ -183,7 +199,7 @@ export const MEAL_PLANS = {
   },
   "week3-4": {
     name: "Building variety at 6 months",
-    ageRange: "6 months, after the first two weeks of solids",
+    ageRange: "6 months, with some feeding experience",
     goals: [
       "Choose meals to fit readiness and appetite",
       "Add a wider range of foods",
@@ -195,6 +211,8 @@ export const MEAL_PLANS = {
         "Choose from these meal ideas as your baby gains experience; there is no requirement to complete every meal.",
       ],
     ],
+    evidenceNote: infantEvidenceNote,
+    sourceIds: planSourceIds,
     sources: planSources,
     days: [
       {
@@ -343,11 +361,13 @@ export const MEAL_PLANS = {
     name: "Meals at 7 months",
     ageRange: "7 months",
     goals: [
-      "Gradually work towards three meals",
+      "Build regular meals around appetite and feeding experience",
       "Offer varied protein foods and starches",
       "Build confidence with soft textures",
     ],
     guidance: [...infantGuidance],
+    evidenceNote: infantEvidenceNote,
+    sourceIds: planSourceIds,
     sources: planSources,
     days: [
       {
@@ -501,6 +521,8 @@ export const MEAL_PLANS = {
       "Offer varied tastes without pressure",
     ],
     guidance: [...infantGuidance],
+    evidenceNote: infantEvidenceNote,
+    sourceIds: planSourceIds,
     sources: planSources,
     days: [
       {
@@ -649,11 +671,13 @@ export const MEAL_PLANS = {
     name: "Meals at 9–11 months",
     ageRange: "9–11 months",
     goals: [
-      "Offer three meals alongside milk feeds",
+      "Offer manageable meals alongside usual milk feeds",
       "Adapt textures to your child’s ability",
       "Keep food variety and familiar favourites",
     ],
     guidance: [...infantGuidance],
+    evidenceNote: infantEvidenceNote,
+    sourceIds: planSourceIds,
     sources: planSources,
     days: [
       {
@@ -861,58 +885,53 @@ export const MEAL_PLANS = {
     ],
   },
   "toddler12-24": {
-    name: "Family meals at 12–24 months",
+    name: "Family meals at 12–23 months",
     ageRange: "12–23 completed months",
     goals: [
-      "Three meals with optional snacks",
-      "Practise cups, spoons and self-feeding",
-      "Include familiar foods alongside variety",
+      "Include an iron-rich food, an energy-rich food and fruit or vegetables at main meals",
+      "Include meat, fish or eggs across the day, with varied legumes and grains",
+      "Support self-feeding and appetite-led portions",
     ],
     guidance: [
       ...sharedGuidance,
-      "Offer three meals, with up to two snacks when hungry. These example recipes use no dairy; check every packaged ingredient.",
-      "Offer water from a cup. Breastfeeding can continue; follow your existing plan for any prescribed formula or milk alternative.",
-      "A first birthday does not remove a milk allergy. Discuss suitable milk alternatives and nutritional needs with your clinician.",
-      "Use small servings of family food without added salt or sugar; portions shown are starting offers, not intake targets.",
+      "The three meal slots and two optional snacks are a planning convenience. Move, skip or adapt them to appetite and your usual routine.",
+      "Each main meal includes foods chosen for iron, energy and fruit or vegetable variety. Ingredient checks describe composition; they cannot establish nutrient adequacy.",
+      "These recipes use no dairy. Check every packaged ingredient and keep the existing milk-allergy restriction and prescribed feeding plan.",
+      "Breastfeeding can continue. These sources do not establish an individual milk replacement or supplement plan for a child with milk allergy.",
+      "Use small servings, offer more when wanted and avoid pressure to finish. Prepare meals without added salt or sugar.",
+      "Peanut is an optional snack choice on three separate days only for children already tolerating it. Choose the avocado alternative when peanut is unsuitable. No first introduction or catch-up schedule is prescribed.",
+      "LEAP used 6 g of peanut protein per week across at least three meals after infant introduction. Three meal ticks do not establish that dose; this menu does not calculate or prescribe it, or set a quota for other allergens.",
     ],
-    sources: [
-      sourceByLabel("NHS: food after"),
-      sourceByLabel("NHS: foods and drinks"),
-      sourceByLabel("NHS: introducing"),
-      sourceByLabel("CDC: food"),
-      sourceByLabel("CDC: hunger"),
-    ],
+    evidenceNote:
+      "These exact recipes, portions and meal times are practical adaptations, not a validated study menu or a nutritionally assessed individual diet. WHO and BLISS inform composition; LEAP supplies peanut-specific context. NNR2023 and OTIS are newly reviewed Nordic sources, not confirmed original documents.",
+    sourceIds: toddlerSourceIds,
+    sources: toddlerSourceIds.map(getEvidenceSource),
     days: [
       {
         day: 1,
         meals: [
           meal(
             "Breakfast",
-            ["oats", "banana", "peanutButter"],
-            "Soft porridge cooked in water with mashed banana and smooth peanut butter stirred through",
+            ["egg", "spinach", "avocado", "bread"],
+            "Fully cooked scrambled egg with finely chopped cooked spinach, mashed avocado and seed-free wheat toast",
           ),
           meal(
             "Lunch",
-            ["pasta", "lentils", "tomato", "courgette", "oliveOil"],
-            "Soft egg-free wheat pasta with lentil, tomato and courgette sauce",
+            ["beef", "sweetPotato", "broccoli", "oliveOil"],
+            "Moist minced beef with sweet potato mash, soft broccoli and olive oil",
           ),
           meal(
             "Dinner",
-            ["chicken", "potato", "broccoli", "oliveOil"],
-            "Tender shredded chicken with potato mash and soft broccoli",
+            ["lentils", "carrots", "courgette", "rice", "oliveOil"],
+            "Thick lentil, carrot and courgette stew with soft rice and olive oil",
           ),
           meal(
             "Morning snack",
             ["pear"],
-            "Soft ripe pear, peeled and cut as needed",
+            "Soft ripe pear, peeled and cut to suit feeding skills",
             { optional: true },
           ),
-          meal(
-            "Afternoon snack",
-            ["bread", "hummus"],
-            "Seed-free, lightly toasted wheat bread with a thin hummus spread",
-            { optional: true },
-          ),
+          optionalPeanutSnack("banana", "Mashed ripe banana"),
         ],
       },
       {
@@ -920,26 +939,29 @@ export const MEAL_PLANS = {
         meals: [
           meal(
             "Breakfast",
-            ["egg", "bread", "avocado"],
-            "Fully cooked scrambled egg with avocado and seed-free wheat toast",
+            ["chickpeas", "tomato", "avocado", "bread"],
+            "Mashed chickpeas and avocado on seed-free wheat toast, with soft cooked tomato",
           ),
           meal(
             "Lunch",
-            ["chickpeas", "rice", "carrots", "tomato", "oliveOil"],
-            "Soft mashed chickpeas in tomato sauce with rice and tender carrots",
+            ["salmon", "lentils", "broccoli", "oliveOil"],
+            "Cooked, carefully deboned salmon with soft lentils, broccoli and olive oil",
           ),
           meal(
             "Dinner",
-            ["beef", "potato", "peas", "oliveOil"],
-            "Moist minced beef and potato bake with flattened peas",
+            ["chicken", "sweetPotato", "peas", "oliveOil"],
+            "Tender shredded chicken with sweet potato, flattened peas and olive oil",
           ),
-          meal("Morning snack", ["banana"], "Soft ripe banana pieces", {
-            optional: true,
-          }),
+          meal(
+            "Morning snack",
+            ["banana"],
+            "Soft ripe banana pieces",
+            { optional: true },
+          ),
           meal(
             "Afternoon snack",
-            ["soyYogurt", "berries"],
-            "Plain fortified soy yoghurt with mashed berries, if soy is suitable",
+            ["hummus", "carrots"],
+            "A thin hummus spread on soft cooked carrot pieces, if its ingredients are tolerated",
             { optional: true },
           ),
         ],
@@ -949,18 +971,18 @@ export const MEAL_PLANS = {
         meals: [
           meal(
             "Breakfast",
-            ["oats", "apple", "almondButter"],
-            "Porridge cooked in water with soft cooked apple and smooth almond butter stirred through",
+            ["tofu", "spinach", "avocado", "bread"],
+            "Soft tofu with finely chopped cooked spinach, mashed avocado and seed-free wheat toast",
           ),
           meal(
             "Lunch",
-            ["salmon", "rice", "broccoli", "oliveOil"],
-            "Cooked, deboned salmon flakes with soft rice and broccoli",
+            ["lamb", "quinoa", "butternutSquash", "oliveOil"],
+            "Tender minced lamb with moist quinoa, soft butternut squash and olive oil",
           ),
           meal(
             "Dinner",
-            ["lentils", "sweetPotato", "spinach", "chapati"],
-            "Thick lentil and sweet potato stew with finely chopped spinach and softened dairy-free wheat chapati",
+            ["beans", "potato", "tomato", "oliveOil"],
+            "Mashed beans and soft potato with cooked tomato and olive oil",
           ),
           meal(
             "Morning snack",
@@ -970,8 +992,8 @@ export const MEAL_PLANS = {
           ),
           meal(
             "Afternoon snack",
-            ["avocado", "bread"],
-            "Avocado on seed-free, lightly toasted wheat bread",
+            ["apple", "almondButter"],
+            "Soft cooked apple with smooth almond butter well thinned into it, if almond is tolerated",
             { optional: true },
           ),
         ],
@@ -981,28 +1003,26 @@ export const MEAL_PLANS = {
         meals: [
           meal(
             "Breakfast",
-            ["egg", "spinach", "bread"],
-            "Fully cooked spinach omelette cut to suit feeding skills, with wheat toast",
+            ["egg", "tomato", "bread", "oliveOil"],
+            "Fully cooked scrambled egg with soft tomato and olive oil, served with seed-free wheat toast",
           ),
           meal(
             "Lunch",
-            ["tofu", "pasta", "courgette", "tomato", "oliveOil"],
-            "Soft tofu and egg-free wheat pasta in courgette and tomato sauce",
+            ["lentils", "sweetPotato", "spinach", "oliveOil"],
+            "Thick lentil and sweet potato stew with finely chopped cooked spinach and olive oil",
           ),
           meal(
             "Dinner",
-            ["turkey", "rice", "carrots", "peas", "oliveOil"],
-            "Tender minced turkey with soft rice, carrots and flattened peas",
+            ["turkey", "barley", "peas", "carrots", "oliveOil"],
+            "Tender minced turkey with very soft mashed barley, flattened peas, tender carrots and olive oil",
           ),
-          meal("Morning snack", ["pear"], "Soft ripe pear pieces", {
-            optional: true,
-          }),
           meal(
-            "Afternoon snack",
-            ["hummus", "carrots"],
-            "Hummus with soft cooked carrot pieces",
+            "Morning snack",
+            ["berries"],
+            "Soft berries, mashed or flattened as needed",
             { optional: true },
           ),
+          optionalPeanutSnack("pear", "Soft cooked pear, mashed"),
         ],
       },
       {
@@ -1010,82 +1030,18 @@ export const MEAL_PLANS = {
         meals: [
           meal(
             "Breakfast",
-            ["bread", "cashewButter", "banana"],
-            "Seed-free wheat toast with a very thin cashew-butter spread and soft banana",
+            ["chickpeas", "avocado", "tomato", "bread"],
+            "Mashed chickpeas with avocado and soft cooked tomato, served with seed-free wheat toast",
           ),
           meal(
             "Lunch",
-            ["beans", "potato", "tomato", "oliveOil"],
-            "Soft potato topped with mashed beans and cooked tomato",
+            ["beef", "pasta", "courgette", "tomato", "oliveOil"],
+            "Moist minced beef and courgette in cooked tomato and olive-oil sauce, with soft egg-free wheat pasta",
           ),
           meal(
             "Dinner",
-            ["lamb", "quinoa", "butternutSquash", "oliveOil"],
-            "Tender minced lamb with moist quinoa and soft butternut squash",
-          ),
-          meal(
-            "Morning snack",
-            ["soyYogurt", "mango"],
-            "Plain fortified soy yoghurt with soft mango, if soy is suitable",
-            { optional: true },
-          ),
-          meal(
-            "Afternoon snack",
-            ["apple", "tahini"],
-            "Soft cooked apple with a little thinned tahini",
-            { optional: true },
-          ),
-        ],
-      },
-      {
-        day: 6,
-        meals: [
-          meal(
-            "Breakfast",
-            ["oats", "pear", "peanutButter"],
-            "Porridge cooked in water with soft pear and smooth peanut butter stirred through",
-          ),
-          meal(
-            "Lunch",
-            ["whitefish", "potato", "peas", "oliveOil"],
-            "Cooked, deboned white fish with potato mash and flattened peas",
-          ),
-          meal(
-            "Dinner",
-            ["chickpeas", "rice", "cauliflower", "tomato", "oliveOil"],
-            "Mashed chickpeas with soft cauliflower and tomato, served over rice",
-          ),
-          meal(
-            "Morning snack",
-            ["berries", "banana"],
-            "Mashed berries and soft banana",
-            { optional: true },
-          ),
-          meal(
-            "Afternoon snack",
-            ["bread", "avocado"],
-            "Avocado on seed-free, lightly toasted wheat bread",
-            { optional: true },
-          ),
-        ],
-      },
-      {
-        day: 7,
-        meals: [
-          meal(
-            "Breakfast",
-            ["egg", "tomato", "bread"],
-            "Fully cooked scrambled egg with soft tomato and seed-free wheat toast",
-          ),
-          meal(
-            "Lunch",
-            ["pasta", "chicken", "broccoli", "oliveOil"],
-            "Soft egg-free wheat pasta with finely shredded chicken and broccoli",
-          ),
-          meal(
-            "Dinner",
-            ["lentils", "rice", "carrots", "spinach", "oliveOil"],
-            "Soft lentil and rice pot with tender carrots and finely chopped spinach",
+            ["whitefish", "beans", "broccoli", "potato", "oliveOil"],
+            "Cooked, carefully deboned white fish with mashed beans, soft potato, broccoli and olive oil",
           ),
           meal(
             "Morning snack",
@@ -1095,8 +1051,67 @@ export const MEAL_PLANS = {
           ),
           meal(
             "Afternoon snack",
-            ["soyYogurt", "pear"],
-            "Plain fortified soy yoghurt with soft pear, if soy is suitable",
+            ["avocado", "bread"],
+            "Mashed avocado on seed-free wheat toast",
+            { optional: true },
+          ),
+        ],
+      },
+      {
+        day: 6,
+        meals: [
+          meal(
+            "Breakfast",
+            ["egg", "spinach", "avocado"],
+            "Fully cooked spinach omelette, cut to suit feeding skills, with soft avocado",
+          ),
+          meal(
+            "Lunch",
+            ["beans", "rice", "cauliflower", "tomato", "oliveOil"],
+            "Mashed beans with soft cauliflower and tomato, served with moist rice and olive oil",
+          ),
+          meal(
+            "Dinner",
+            ["chicken", "lentils", "sweetPotato", "oliveOil"],
+            "Tender shredded chicken in a thick lentil and sweet potato stew with olive oil",
+          ),
+          meal(
+            "Morning snack",
+            ["mango"],
+            "Soft ripe mango pieces without skin or stone",
+            { optional: true },
+          ),
+          optionalPeanutSnack("apple", "Soft cooked apple, mashed"),
+        ],
+      },
+      {
+        day: 7,
+        meals: [
+          meal(
+            "Breakfast",
+            ["oats", "banana", "egg", "almondButter"],
+            "Soft porridge cooked in water with mashed banana and smooth almond butter stirred through, with fully cooked egg alongside",
+          ),
+          meal(
+            "Lunch",
+            ["lamb", "carrots", "potato", "oliveOil"],
+            "Moist minced lamb stew with tender carrots, soft potato and olive oil",
+          ),
+          meal(
+            "Dinner",
+            ["lentils", "courgette", "spinach", "chapati", "oliveOil"],
+            "Thick lentils with soft courgette, finely chopped cooked spinach and olive oil, with softened dairy-free wheat chapati",
+          ),
+          meal(
+            "Morning snack",
+            ["berries", "pear"],
+            "Mashed berries with soft ripe pear pieces",
+            { optional: true },
+          ),
+          meal(
+            "Afternoon snack",
+            ["hummus", "carrots"],
+            "A thin hummus spread on soft cooked carrot pieces, if its ingredients are tolerated",
             { optional: true },
           ),
         ],

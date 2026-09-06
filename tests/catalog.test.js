@@ -7,6 +7,7 @@ import {
   SOURCES,
 } from "../src/catalog.js";
 import { getRecommendedPlanKey, MEAL_PLANS } from "../src/plans.js";
+import { EVIDENCE_SOURCES } from "../src/evidence.js";
 
 const originalFoodIds = [
   "beef",
@@ -96,10 +97,19 @@ test("every food is selectable once, has age guidance and uses valid allergen id
 
 test("food and plan references are labeled links to primary sources", () => {
   const permittedHosts = new Set([
-    "www.nhs.uk",
-    "www.cdc.gov",
-    "www.fda.gov",
+    "www.ncbi.nlm.nih.gov",
+    "pmc.ncbi.nlm.nih.gov",
     "pubmed.ncbi.nlm.nih.gov",
+    "www.leapstudy.co.uk",
+    "kclpure.kcl.ac.uk",
+    "link.springer.com",
+    "bmjopen.bmj.com",
+    "www.mdpi.com",
+    "pub.norden.org",
+    "www.repository.cam.ac.uk",
+    "www.oslo-universitetssykehus.no",
+    "cdn.who.int",
+    "www.who.int",
   ]);
   const references = [
     ...SOURCES,
@@ -115,7 +125,33 @@ test("food and plan references are labeled links to primary sources", () => {
     assert.equal(url.protocol, "https:");
     assert.ok(permittedHosts.has(url.hostname));
     assert.notEqual(url.pathname, "/");
+    assert.ok(EVIDENCE_SOURCES.some((source) => source.id === reference.id && source.url === reference.url));
+    for (const field of ["type", "ageRange", "finding", "limitations", "provenance"]) {
+      assert.ok(reference[field], `${reference.id}: missing ${field}`);
+    }
   }
+});
+
+test("toddler main meals retain the three BLISS components and daily animal foods", () => {
+  const plan = MEAL_PLANS["toddler12-24"];
+  const peanutDays = new Set();
+  for (const day of plan.days) {
+    const meals = day.meals.filter((meal) => !meal.optional);
+    for (const meal of meals) for (const option of meal.options) {
+      const roles = new Set(option.foods.flatMap((id) => FOOD_DATABASE[id].roles));
+      for (const role of ["iron", "energy", "produce"]) assert.ok(roles.has(role), `Day ${day.day}, ${meal.time}: missing ${role}`);
+    }
+    assert.ok(meals.some((meal) => meal.options.some((option) => option.foods.some((id) => FOOD_DATABASE[id].roles.includes("animal")))));
+    for (const meal of day.meals) {
+      if (meal.options.some((option) => option.foods.includes("peanutButter"))) {
+        peanutDays.add(day.day);
+        assert.ok(meal.options.some((option) => option.foods.every((id) => !FOOD_DATABASE[id].allergens.includes("peanut"))), "Peanut rotation needs an alternative");
+      }
+    }
+  }
+  assert.ok(peanutDays.size >= 3);
+  assert.ok(!FOOD_DATABASE.milk.roles.includes("animal"), "Milk does not satisfy the WHO meat/fish/egg prompt");
+  assert.ok(!FOOD_DATABASE.breastMilk?.roles?.includes("animal"));
 });
 
 test("every plan has seven complete days with resolvable ingredients and introductions", () => {

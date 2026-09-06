@@ -13,6 +13,7 @@ import {
   SOURCES,
 } from "./catalog.js";
 import { MEAL_PLANS, getRecommendedPlanKey } from "./plans.js";
+import { getEvidenceSource, RESEARCH_REVIEW_DATE } from "./evidence.js";
 import {
   getCompletedMonths,
   getAgeLabel,
@@ -214,7 +215,7 @@ function downloadText(text, filename) {
   setTimeout(() => URL.revokeObjectURL(url), 60_000);
 }
 
-function Sources({ sources = SOURCES }) {
+function Sources({ sources = SOURCES, detailed = false }) {
   const values = Array.isArray(sources) ? sources : Object.values(sources);
   return (
     <ul className="source-list">
@@ -225,10 +226,145 @@ function Sources({ sources = SOURCES }) {
               {source.label || source.title || source.url}
               <span aria-hidden="true"> ↗</span>
             </a>
+            {detailed && (
+              <div className="source-context">
+                <p className="caption">{source.type} · {source.ageRange}</p>
+                <p>{source.finding}</p>
+                <p className="caption">{source.limitations}</p>
+                <p className="caption">{source.provenance}</p>
+              </div>
+            )}
           </li>
         ) : null,
       )}
     </ul>
+  );
+}
+
+const FOOD_ROLES = [
+  { id: "iron", label: "Iron-rich component" },
+  { id: "energy", label: "Energy-rich component" },
+  { id: "produce", label: "Vegetables or fruit" },
+];
+
+function MealComponents({ ids, foods }) {
+  return (
+    <dl className="meal-components">
+      {FOOD_ROLES.map(({ id, label }) => {
+        const matches = ids.filter((foodId) => foods[foodId]?.roles?.includes(id));
+        return (
+          <div key={id}>
+            <dt>{label}</dt>
+            <dd>{matches.length ? foodNames(matches, foods) : "Choose a suitable addition"}</dd>
+          </div>
+        );
+      })}
+    </dl>
+  );
+}
+
+function PeanutResearch() {
+  return (
+    <details className="research-note">
+      <summary>What the peanut research means</summary>
+      <p>
+        LEAP studied children who started peanut between 4 and under 11 months
+        and continued to age five. Its regimen was 6 g of peanut protein per
+        week across at least three meals. That is peanut protein, not the
+        weight of peanut butter.
+      </p>
+      <p>
+        This gives context for continued use of already tolerated peanut under
+        your child’s existing plan. It does not establish first introduction at
+        this age, a minimum effective dose, or missed-dose and catch-up rules.
+        Suspected or avoided foods need individual advice. The other allergens
+        do not inherit the peanut regimen.
+      </p>
+      <p className="caption">
+        Eating-occasion counts and the menu rotation do not measure the trial
+        dose. Record the product and actual amount in the diary when known.
+      </p>
+      <Sources sources={[getEvidenceSource("leap"), getEvidenceSource("leapOn"), getEvidenceSource("leapSpecificity")]} />
+    </details>
+  );
+}
+
+function DailyFoodPattern({ today, foods }) {
+  const eaten = new Set(today.filter((feed) => feed.consumption === "eaten").flatMap((feed) => feed.foods));
+  const offered = new Set(today.filter((feed) => ["offered", "refused"].includes(feed.consumption)).flatMap((feed) => feed.foods));
+  const roles = [...FOOD_ROLES, { id: "animal", label: "Meat, fish or egg across the day" }];
+  return (
+    <section className="card">
+      <SectionTitle title="Today’s food pattern" eyebrow="From your diary" />
+      <dl className="meal-components daily-pattern">
+        {roles.map(({ id, label }) => {
+          const confirmed = [...eaten].filter((key) => foods[key]?.roles?.includes(id));
+          const onlyOffered = [...offered].filter((key) => !eaten.has(key) && foods[key]?.roles?.includes(id));
+          return (
+            <div key={id}>
+              <dt>{label}</dt>
+              <dd>
+                {confirmed.length ? `Eaten: ${foodNames(confirmed, foods)}` : "No confirmed intake recorded"}
+                {onlyOffered.length > 0 && <span className="caption">Offered only: {foodNames(onlyOffered, foods)}</span>}
+              </dd>
+            </div>
+          );
+        })}
+      </dl>
+      <p className="caption">
+        BLISS informs the iron, energy and produce prompts; WHO informs the
+        daily meat, fish or egg prompt. These show recorded foods, not nutrient
+        quantities or targets to make your child finish. Custom foods may have
+        no assigned role.
+      </p>
+      <Sources sources={[getEvidenceSource("blissProtocol"), getEvidenceSource("who2023")]} />
+    </section>
+  );
+}
+
+function ResearchGuide({ months }) {
+  return (
+    <section className="card stack">
+      <SectionTitle title="Feeding research" eyebrow={`Reviewed ${RESEARCH_REVIEW_DATE}`} />
+      <p>
+        WHO 2023, LEAP, Scandinavian/Nordic research and NZ BLISS are the
+        research basis. The meal combinations and portions are practical
+        adaptations. Each source below explains what was studied and its limits.
+      </p>
+      {months >= 12 && months < 24 && (
+        <details>
+          <summary>Reference values for 12–23 months</summary>
+          <p>
+            Nordic guidance gives protein 10–15%, fat 30–40% and carbohydrate
+            45–60% of total dietary energy, including milk feeds. These concern
+            the whole diet, not the proportions of each plate.
+          </p>
+          <p>
+            Its single-year “1 y” table gives iron 7 mg, vitamin D 10 micrograms,
+            calcium 400 mg and zinc 4.0 mg per day. These are usual intake
+            references, not supplement doses. The diary does not calculate
+            nutrient adequacy.
+          </p>
+          <Sources sources={[getEvidenceSource("nordic2023"), getEvidenceSource("nordicIntakes")]} />
+        </details>
+      )}
+      <PeanutResearch />
+      <details>
+        <summary>Studies, findings and limits</summary>
+        <Sources detailed />
+      </details>
+      <p className="caption">
+        NNR2023, OTIS and PreventADALL were identified during the further
+        Nordic review. The original selected PDFs were not available to match
+        every reference exactly.
+      </p>
+      <p>
+        <a href="https://github.com/shahe-dev/baby-feeding-tracker/blob/master/docs/feeding-research-12-23-months.md" target="_blank" rel="noreferrer">Full toddler evidence review</a>
+        {" · "}
+        <a href="https://github.com/shahe-dev/baby-feeding-tracker/blob/master/docs/revised-evidence-based-feeding-schedule.md" target="_blank" rel="noreferrer">Original research summary (archive)</a>
+      </p>
+      <p className="caption">The archive preserves the original wording; the current review identifies claims that need correcting.</p>
+    </section>
   );
 }
 
@@ -389,6 +525,7 @@ function AllergenSummary({ data, foods, now, compact = false, onProfile }) {
         packaging and record every ingredient; the food list cannot detect
         undeclared allergens.
       </p>
+      <PeanutResearch />
     </section>
   );
 }
@@ -479,7 +616,7 @@ function Dashboard({ data, foods, now, onLog, onEdit, onNavigate }) {
           <span>days logged in a row</span>
         </div>
       </div>
-      {months >= 12 && (
+      {months >= 12 && months < 24 && (
         <section className="card routine-card">
           <div className="section-icon">
             <Icon name="plate" />
@@ -487,9 +624,9 @@ function Dashboard({ data, foods, now, onLog, onEdit, onNavigate }) {
           <div>
             <h2>Room for family meals</h2>
             <p>
-              Plan around three meals and, if needed, two snacks. Record drinks
-              too. Appetite varies from day to day, so start with small servings
-              and offer more when wanted.
+              Build meals around an iron-rich food, an energy-rich food and
+              vegetables or fruit. Our menu uses three meals and two optional
+              snacks as a flexible routine. Record drinks too, and follow appetite.
             </p>
             <button className="text-button" onClick={() => onNavigate("meals")}>
               See meal ideas <Icon name="arrow" size={16} />
@@ -497,11 +634,13 @@ function Dashboard({ data, foods, now, onLog, onEdit, onNavigate }) {
           </div>
         </section>
       )}
+      {months >= 6 && months < 24 && <DailyFoodPattern today={today} foods={foods} />}
       {firstOption && (
         <section className="card meal-pick">
           <SectionTitle title="An idea for today" eyebrow={plan.name} />
           <p className="meal-description">{firstOption.description}</p>
           <p className="muted">{foodNames(firstOption.foods, foods)}</p>
+          {months >= 12 && months < 24 && !firstMeal.optional && <MealComponents ids={firstOption.foods} foods={foods} />}
           <div className="button-row">
             <button
               className="button button-secondary"
@@ -1226,7 +1365,7 @@ function MealPlanner({ data, foods, now, browseKey, onBrowse, onLog }) {
               ? "Set your child’s birth date in Profile to see the appropriate stage."
               : age < 6
                 ? "No solids plan is selected before 6 months. Discuss readiness and feeding with your child’s clinician."
-                : "The built-in plans cover 6–24 months. Your diary, drinks, recipes and food restrictions still work as your child grows."}
+                : "The built-in plans cover 6–23 months. Your diary, drinks, recipes and food restrictions still work as your child grows."}
           </Empty>
           <Field
             label="Browse a stage manually"
@@ -1275,7 +1414,7 @@ function MealPlanner({ data, foods, now, browseKey, onBrowse, onLog }) {
               ? "A birth date has not been set. This is a manually selected plan."
               : age < 6
                 ? "This is a manually selected solids plan. Before 6 months, discuss readiness and feeding with your child’s clinician."
-                : "This is a manually selected plan from the 6–24-month collection."}
+                : "This is a manually selected plan from the 6–23-month collection."}
           </Notice>
         )}
         {browseKey && browseKey !== recommended && (
@@ -1287,7 +1426,15 @@ function MealPlanner({ data, foods, now, browseKey, onBrowse, onLog }) {
         <div>
           <h2>{plan.name}</h2>
           <p className="muted">{plan.ageRange}</p>
+          {plan.evidenceNote && <p className="caption">{plan.evidenceNote}</p>}
         </div>
+        {data.babyProfile.feedingNotes && (
+          <details className="personal-instructions">
+            <summary>Your feeding instructions</summary>
+            <p>{data.babyProfile.feedingNotes}</p>
+            <p className="caption">Saved in Profile. Check these instructions when choosing a meal; they are not interpreted automatically.</p>
+          </details>
+        )}
         {plan.guidance?.length > 0 && (
           <ul className="guidance-list">
             {plan.guidance.map((item) => (
@@ -1349,6 +1496,7 @@ function MealPlanner({ data, foods, now, browseKey, onBrowse, onLog }) {
                   <div className="meal-option" key={optionIndex}>
                     <h3>{option.description}</h3>
                     <p className="muted">{foodNames(option.foods, foods)}</p>
+                    {key === "toddler12-24" && !meal.optional && <MealComponents ids={option.foods} foods={foods} />}
                     <details>
                       <summary>Preparation & ingredients</summary>
                       <ul className="preparation-list">
@@ -1442,6 +1590,7 @@ function MealPlanner({ data, foods, now, browseKey, onBrowse, onLog }) {
       </section>
       <section className="card">
         <h2>Guidance behind these ideas</h2>
+        <p className="caption">These sources support feeding principles. The exact recipes, portions and timing are practical adaptations; ingredient lists do not establish nutrient adequacy.</p>
         <Sources sources={plan.sources || SOURCES} />
       </section>
     </div>
@@ -1769,6 +1918,14 @@ function FoodLibrary({
                   {food.preparation ||
                     "Prepare for your child’s current feeding abilities and check ingredients."}
                 </p>
+                {food.evidenceNote && (
+                  <details>
+                    <summary>Why this food is included</summary>
+                    <p>{food.evidenceNote}</p>
+                    <p className="caption">{food.preparationBasis}</p>
+                    <Sources sources={food.sources || []} />
+                  </details>
+                )}
                 <p className="caption">
                   <strong>Listed allergens:</strong>{" "}
                   {food.allergens?.length
@@ -2193,6 +2350,7 @@ function getProfileForm(profile, feeds, foods) {
     solidStartDate: profile.solidStartDate || "",
     dairyFree: profile.dairyFree !== false,
     texture: profile.texture || "family",
+    feedingNotes: profile.feedingNotes || "",
     allergenStatus: getAllergenStatuses(profile, feeds, foods),
     foodStatus: getFoodStatuses(profile, feeds, foods),
   };
@@ -2229,7 +2387,7 @@ function Profile({
   useEffect(() => {
     // Growth saves do not recreate this component or replace its unsaved profile fields.
     if (
-      ["name", "birthDate", "solidStartDate", "dairyFree", "texture"].some(
+      ["name", "birthDate", "solidStartDate", "dairyFree", "texture", "feedingNotes"].some(
         (key) => savedProfile.current[key] !== profile[key],
       ) ||
       JSON.stringify(savedProfile.current.allergenStatus) !==
@@ -2346,6 +2504,9 @@ function Profile({
         </div>
         <div className="form-section">
           <h2>Food restrictions</h2>
+          <Field label="Your feeding instructions" hint="Keep existing allergy advice, milk/formula details and any agreed food amounts here. Saved on this device; the app does not change menus from these notes automatically.">
+            <textarea rows={4} maxLength={4000} value={form.feedingNotes} onChange={(event) => update("feedingNotes", event.target.value)} placeholder="Existing feeding or allergy plan, milk/formula product, instructions and review date" />
+          </Field>
           <label className="check-row">
             <input
               type="checkbox"
@@ -2462,17 +2623,7 @@ function Profile({
         />
       </section>
       <BackupPanel data={data} onImport={onImport} />
-      <section className="card">
-        <SectionTitle title="Feeding guidance & sources" />
-        <p className="muted">
-          Meal ideas are general guidance, not a prescribed diet. Tolerated
-          allergens may remain part of the usual diet; there is no universal
-          three-times-weekly score. The LEAP trial studied peanut in high-risk
-          infants and does not establish a schedule for every allergen.
-        </p>
-        <Sources />
-        <SafetyNote />
-      </section>
+      <ResearchGuide months={getCompletedMonths(profile.birthDate, now)} />
     </div>
   );
 }
