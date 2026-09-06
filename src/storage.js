@@ -97,6 +97,7 @@ export function emptyData() {
     feedingLog: [],
     customFoods: [],
     recipes: [],
+    dailyPlans: {},
   };
 }
 
@@ -333,6 +334,80 @@ export function normalizeData(raw) {
     }),
     "Recipes",
   );
+  const planObject = (value, label) => {
+    object(value, label);
+    if (
+      ![Object.prototype, null].includes(Object.getPrototypeOf(value)) ||
+      Object.keys(value).some((key) =>
+        ["__proto__", "constructor", "prototype"].includes(key),
+      )
+    )
+      fail(`${label} contains an invalid object or key.`);
+    return value;
+  };
+  const planText = (value, label, max) => {
+    if (typeof value !== "string")
+      fail(`${label} must be text (maximum ${max} characters).`);
+    return string(value, label, max);
+  };
+  const planEntries = Object.entries(
+    planObject(
+      raw.dailyPlans === undefined ? {} : raw.dailyPlans,
+      "Daily plans",
+    ),
+  );
+  if (planEntries.length > 1000)
+    fail("Daily plans can contain a maximum of 1000 saved days.");
+  const dailyPlans = {};
+  for (const [date, rawPlan] of planEntries) {
+    if (!parseLocalDate(date))
+      fail("A daily plan date must be a valid YYYY-MM-DD date.");
+    if (babyProfile.birthDate && date < babyProfile.birthDate)
+      fail("A daily plan date cannot precede the birth date.");
+    const plan = planObject(rawPlan, "Daily plan");
+    const stage = enumValue(
+      plan.stage,
+      ["toddler12-24"],
+      "Daily plan stage",
+    );
+    const slots = new Set();
+    const meals = array(plan.meals, "Planned meals", 5).map((rawMeal) => {
+      const meal = planObject(rawMeal, "Planned meal");
+      const slot = enumValue(
+        meal.slot,
+        ["breakfast", "lunch", "dinner", "morningSnack", "afternoonSnack"],
+        "Planned meal slot",
+      );
+      if (slots.has(slot)) fail("A daily plan contains duplicate meal slots.");
+      slots.add(slot);
+      const recipeId = planText(meal.recipeId, "Planned recipe ID", 160);
+      const title = planText(meal.title, "Planned meal title", 160);
+      const foods = foodIds(meal.foods, "Planned meal ingredients");
+      if (!recipeId.trim()) fail("A planned meal needs a recipe ID.");
+      if (!title.trim()) fail("A planned meal needs a title.");
+      if (!foods.length) fail("A planned meal needs at least one ingredient.");
+      return {
+        slot,
+        recipeId,
+        title,
+        description: planText(
+          meal.description,
+          "Planned meal description",
+          2000,
+        ),
+        foods,
+        steps: array(meal.steps, "Planned meal steps", 8).map((step) =>
+          planText(step, "Planned meal step", 500),
+        ),
+        sourceIds: array(meal.sourceIds, "Planned meal sources", 32).map(
+          (sourceId) => planText(sourceId, "Planned meal source", 80),
+        ),
+      };
+    });
+    // Retain snapshots after recipes change and as the child ages. Planned meals
+    // are not feeding records and do not establish intake or allergen exposure.
+    dailyPlans[date] = { stage, meals };
+  }
   return {
     version: 2,
     revision,
@@ -340,6 +415,7 @@ export function normalizeData(raw) {
     feedingLog,
     customFoods,
     recipes,
+    dailyPlans,
   };
 }
 

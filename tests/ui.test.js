@@ -5,6 +5,7 @@ import { JSDOM } from "jsdom";
 import { mkdir } from "node:fs/promises";
 import { emptyData, STORAGE_KEY, PREVIOUS_KEY } from "../src/storage.js";
 import { FOOD_DATABASE } from "../src/catalog.js";
+import { suggestDay } from "../src/dailyPlanner.js";
 import {
   localDateKey,
   toLocalInputValue,
@@ -138,6 +139,136 @@ function toddlerData() {
   data.babyProfile.birthDate = localDateKey(birth);
   return data;
 }
+
+test("a suggested day saves separately from intake and survives navigation", async () => {
+  await mount(toddlerData());
+  const planner = document.querySelector('.day-planner');
+  assert.equal(planner.querySelectorAll('.day-meal-card').length, 3);
+  assert.equal(planner.querySelector('.day-method').open, false);
+  assert.ok([...planner.querySelectorAll('.day-recipe-details')].every((item) => !item.open));
+  assert.deepEqual(saved().dailyPlans, {});
+  await click(button('Use this day', planner));
+  const date = localDateKey();
+  const plan = saved().dailyPlans[date];
+  assert.equal(plan.meals.length, 3);
+  assert.equal(saved().feedingLog.length, 0);
+  assert.ok(plan.meals.every((meal) => meal.steps.length >= 2));
+  await click(button('Diary'));
+  await click(button('Meals'));
+  assert.deepEqual(saved().dailyPlans[date], plan);
+  assert.deepEqual([...document.querySelectorAll('.day-meal-card > h3')].map((node) => node.textContent), plan.meals.map((meal) => meal.title));
+});
+
+test("swapping one recipe preserves other meals and updates the day shopping list", async () => {
+  await mount(toddlerData());
+  await click(button('Use this day'));
+  const date = localDateKey();
+  const before = saved().dailyPlans[date];
+  await click(document.querySelector('[aria-label="Swap lunch"]'));
+  const dialog = document.querySelector('dialog');
+  await click(button('Choose', dialog));
+  assert.equal(document.querySelector('dialog'), null);
+  const after = saved().dailyPlans[date];
+  assert.notEqual(after.meals[1].recipeId, before.meals[1].recipeId);
+  assert.deepEqual(after.meals[0], before.meals[0]);
+  assert.deepEqual(after.meals[2], before.meals[2]);
+  const names = [...new Set(after.meals.flatMap((meal) => meal.foods))].map((id) => FOOD_DATABASE[id].name).sort();
+  assert.deepEqual([...document.querySelectorAll('.day-shopping-items li')].map((node) => node.textContent).sort(), names);
+  assert.equal(saved().feedingLog.length, 0);
+});
+
+test("a late clipboard failure cannot replace another day's shopping list", async () => {
+  await mount(toddlerData());
+  await click(button("Meals"));
+  const original = Object.getOwnPropertyDescriptor(navigator, "clipboard");
+  let rejectCopy;
+  Object.defineProperty(navigator, "clipboard", {
+    configurable: true,
+    value: { writeText: () => new Promise((resolve, reject) => { rejectCopy = reject; }) },
+  });
+  try {
+    await click(button("Copy shopping list"));
+    assert.equal(typeof rejectCopy, "function");
+    await click(button("Tomorrow"));
+    await act(async () => rejectCopy(new Error("Clipboard declined")));
+    assert.equal(document.querySelector('[aria-label="Shopping list to copy"]'), null);
+    assert.equal(document.querySelector('.day-shopping [role="status"]').textContent, "");
+  } finally {
+    if (original) Object.defineProperty(navigator, "clipboard", original);
+    else delete navigator.clipboard;
+  }
+});
+
+test("tomorrow is planned independently and cannot be logged as eaten today", async () => {
+  await mount(toddlerData());
+  await click(button('Use this day'));
+  const today = localDateKey();
+  const first = saved().dailyPlans[today];
+  await click(button('Meals'));
+  await click(button('Tomorrow'));
+  await click(button('Use this day'));
+  assert.equal(Object.keys(saved().dailyPlans).length, 2);
+  assert.deepEqual(saved().dailyPlans[today], first);
+  assert.ok([...document.querySelectorAll('.day-meal-card > button')].every((node) => node.disabled));
+  assert.equal(saved().feedingLog.length, 0);
+  await click(button('Today'));
+  assert.ok(!button('Log breakfast').disabled);
+});
+
+test("past planned meals prefill the correct diary date and require intake confirmation", async () => {
+  const data = toddlerData();
+  const date = localDateKey(new Date(Date.now() - 86400000));
+  data.dailyPlans[date] = suggestDay({data, foods: FOOD_DATABASE, date});
+  await mount(data);
+  await click(button('Meals'));
+  await fill(field('Choose date'), date);
+  await click(button('Log breakfast'));
+  const dialog = document.querySelector('dialog');
+  assert.equal(field('Date and time', dialog).value.slice(0,10), date);
+  assert.equal(field('What happened?', dialog).value, '');
+  await submit(dialog.querySelector('form'));
+  assert.equal(saved().feedingLog.length, 0);
+  await fill(field('What happened?', dialog), 'eaten');
+  await submit(dialog.querySelector('form'));
+  assert.equal(localDateKey(saved().feedingLog[0].date), date);
+  assert.deepEqual(saved().dailyPlans[date], data.dailyPlans[date]);
+});
+
+test("new restrictions retain saved choices but disable their logging and shopping inclusion", async () => {
+  const data = toddlerData(), date = localDateKey();
+  data.dailyPlans[date] = suggestDay({data, foods: FOOD_DATABASE, date});
+  const ingredient = data.dailyPlans[date].meals[0].foods[0];
+  data.babyProfile.foodStatus[ingredient] = 'avoid';
+  await mount(data);
+  assert.ok(document.querySelectorAll('.day-meal-card.needs-review').length > 0);
+  assert.ok(button('Log breakfast').disabled);
+  assert.deepEqual(saved().dailyPlans[date], data.dailyPlans[date]);
+  assert.ok(![...document.querySelectorAll('.day-shopping-items li')].some((node) => node.textContent === FOOD_DATABASE[ingredient].name));
+});
+
+test("a failed recipe swap keeps the picker open and preserves the saved day", async () => {
+  await mount(toddlerData());
+  await click(button('Use this day'));
+  const before = saved().dailyPlans[localDateKey()];
+  await click(document.querySelector('[aria-label="Swap lunch"]'));
+  const original = dom.window.Storage.prototype.setItem;
+  dom.window.Storage.prototype.setItem = () => { throw new Error('Storage full'); };
+  try { await click(button('Choose', document.querySelector('dialog'))); }
+  finally { dom.window.Storage.prototype.setItem = original; }
+  assert.ok(document.querySelector('dialog[open]'));
+  assert.match(document.querySelector('dialog').textContent, /not saved/);
+  assert.deepEqual(saved().dailyPlans[localDateKey()], before);
+});
+
+test("optional snacks can be chosen and removed without affecting intake", async () => {
+  await mount(toddlerData());
+  await click(document.querySelector('[aria-label="Add morning snack"]'));
+  await click(button('Choose', document.querySelector('dialog')));
+  assert.equal(saved().dailyPlans[localDateKey()].meals.length, 4);
+  await click(document.querySelector('[aria-label="Remove morning snack"]'));
+  assert.equal(saved().dailyPlans[localDateKey()].meals.length, 3);
+  assert.equal(saved().feedingLog.length, 0);
+});
 
 test("profile typing retains focus and saving weight preserves the unsaved height", async () => {
   await mount(toddlerData());
