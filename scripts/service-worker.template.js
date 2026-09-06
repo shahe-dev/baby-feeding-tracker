@@ -28,11 +28,12 @@ self.addEventListener("install", (event) => {
             throw new Error("Required offline file unavailable: " + path);
           if (request.url === INDEX_URL) {
             const html = await response.clone().text();
-            if (
-              !html.includes(
-                '<meta name="app-build" content="' + BUILD_ID + '">',
-              )
-            ) {
+            // Both <meta ...> and <meta ... /> are valid. Compare the value,
+            // not the tag's serialization, while still rejecting mixed builds.
+            const buildTag = html.match(
+              /<meta\s+name="app-build"\s+content="([^"]+)"\s*\/?>/i,
+            );
+            if (buildTag?.[1] !== BUILD_ID) {
               throw new Error(
                 "App files belong to different builds. Keeping previous installation.",
               );

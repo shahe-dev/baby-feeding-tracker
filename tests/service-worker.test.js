@@ -27,6 +27,8 @@ function harness({
   mismatchIndex = false,
   failPut = false,
   oldCaches = [],
+  workerSource,
+  releaseFiles,
 } = {}) {
   const listeners = new Map();
   const stores = new Map(oldCaches.map((name) => [name, new Map()]));
@@ -76,6 +78,11 @@ function harness({
     calls.network.push(url);
     if (offline) throw new Error("Network unavailable");
     if (url === failUrl) return new Response("Unavailable", { status: 503 });
+    if (releaseFiles) {
+      return releaseFiles.has(url)
+        ? new Response(releaseFiles.get(url))
+        : new Response("Missing release file", { status: 404 });
+    }
     if (url.endsWith("/index.html"))
       return new Response(
         mismatchIndex ? '<meta name="app-build" content="old">' : html,
@@ -85,7 +92,7 @@ function harness({
     );
   };
   vm.runInNewContext(
-    template
+    workerSource || template
       .replace("__BUILD_ID__", JSON.stringify(buildId))
       .replace("__PRECACHE_URLS__", JSON.stringify(precache)),
     { self, caches, fetch, URL, Request, Set, Promise, Error },
@@ -118,6 +125,28 @@ function harness({
     },
   };
 }
+
+test("the generated release installs and serves its actual HTML and assets offline", async () => {
+  const root = new URL("../", import.meta.url);
+  const workerSource = await readFile(new URL("service-worker.js", root), "utf8");
+  const releasePaths = JSON.parse(workerSource.match(/const PRECACHE_URLS = (\[[\s\S]*?\]);/)[1]);
+  const releaseFiles = new Map(await Promise.all(releasePaths.map(async (path) => [
+    new URL(path, scope).href,
+    await readFile(new URL(path, root)),
+  ])));
+  const app = harness({ workerSource, releaseFiles });
+  await app.dispatch("install");
+  assert.equal(app.calls.skipWaiting, 0);
+  assert.equal(app.calls.network.length, releasePaths.length);
+  await app.dispatch("activate");
+  app.setOffline();
+  const navigation = await app.request(scope, { mode: "navigate" });
+  assert.equal(await navigation.text(), releaseFiles.get(scope + "index.html").toString());
+  for (const [url, bytes] of releaseFiles) {
+    const response = await app.request(url);
+    assert.deepEqual(Buffer.from(await response.arrayBuffer()), bytes);
+  }
+});
 
 test("installation caches every required file and does not activate without consent", async () => {
   const app = harness();
