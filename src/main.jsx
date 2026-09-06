@@ -106,17 +106,22 @@ if ("serviceWorker" in navigator) {
         "./service-worker.js",
         { updateViaCache: "none" },
       );
-      offerUpdate(registration.waiting);
-      registration.addEventListener("updatefound", () => {
+      const watchInstalling = () => {
         const installing = registration.installing;
-        installing?.addEventListener("statechange", () => {
+        if (!installing) return;
+        const checkState = () => {
           if (
             installing.state === "installed" &&
             navigator.serviceWorker.controller
           )
             offerUpdate(registration.waiting || installing);
-        });
-      });
+        };
+        installing.addEventListener("statechange", checkState);
+        checkState();
+      };
+      registration.addEventListener("updatefound", watchInstalling);
+      watchInstalling();
+      offerUpdate(registration.waiting);
       window.addEventListener("online", () =>
         registration.update().catch(() => {}),
       );

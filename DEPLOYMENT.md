@@ -6,8 +6,8 @@ Use Node.js 22 or later:
 
 ```sh
 npm ci
-npm test
 npm run build
+npm test
 ```
 
 Commit source, package lock, generated `index.html`, `service-worker.js`, `assets/` and `icons/` together. Do not edit generated bundles directly. CI rebuilds and fails when the committed files are out of date.
@@ -24,6 +24,8 @@ Open the app online once and let installation complete before relying on offline
 
 Updates wait for the Update button or for all old tabs to close. Save any draft first. The refresh follows activation of the new worker. Only caches belonging to this app are cleaned up; personal records live separately in localStorage.
 
+If an older installed app never offers an update, open it online and let the new worker install, then close all tracker tabs in Safari and fully close the installed tracker from the app switcher. Reopen the tracker. Closing every old client lets the waiting worker activate without a banner. Do not clear website data or delete the app to trigger an update.
+
 Before release, verify on the intended iPhone:
 
 1. Export a backup from the existing app.
@@ -37,7 +39,7 @@ Before release, verify on the intended iPhone:
 9. Test an update while the app is open; saved plans and diary records should persist and the update should wait for the user's action.
 10. Check VoiceOver labels, larger text, keyboard visibility and safe-area spacing, including the date controls, swap dialog and expandable recipe details.
 
-Automated tests cover date calculations, daily plan selection, storage and imports, React forms and service-worker failure behavior. These checks do not establish that a physical iPhone installation, update or offline test has been completed. Record those results separately for each release.
+Automated tests cover date calculations, daily plan selection, storage and imports, React forms and service-worker failure behavior. They also install the actual generated worker against the generated HTML and every precached asset, then verify offline responses. These checks do not establish that a physical iPhone installation, update or offline test has been completed. Record those results separately for each release.
 
 ## Data recovery
 
